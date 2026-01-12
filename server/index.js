@@ -10,20 +10,17 @@ dotenv.config();
 
 const app = express();
 
-// ✅ CORS FIX (IMPORTANT)
+// ✅ CORS (SAFE FOR RENDER + ANDROID)
 app.use(
   cors({
     origin: [
-      "http://localhost:3000",                // frontend dev
-      "https://campuspark-backend.onrender.com" // allow same-origin
+      "http://localhost:3000",
+      "https://campuspark-backend.onrender.com"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-// ✅ Handle preflight
-app.options("*", cors());
 
 app.use(express.json());
 
@@ -37,7 +34,7 @@ mongoose
 app.use('/api/slots', slotRoutes);
 app.use('/api/zones', zoneRoutes);
 
-// ✅ RENDER-SAFE PORT (CRITICAL FIX)
+// ✅ Render-safe port
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
