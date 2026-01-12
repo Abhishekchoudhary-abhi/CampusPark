@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CampusPark</string>
+    <string name="title_activity_main">CampusPark</string>
+    <string name="package_name">com.campuspark.app</string>
+    <string name="custom_url_scheme">com.campuspark.app</string>
+</resources>
