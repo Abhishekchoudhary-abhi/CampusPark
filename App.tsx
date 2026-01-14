@@ -9,7 +9,8 @@ import {
 
 import AdminDashboard from './components/AdminDashboard';
 import UserDashboard from './components/UserDashboard';
-import AdminLogin from "./components/Login";
+import OwnerDashboard from './components/OwnerDashboard';
+import Login from './components/Login';
 
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -21,10 +22,24 @@ const App: React.FC = () => {
   console.log('API BASE:', import.meta.env.VITE_API_BASE);
 
   /* ==================== AUTH ==================== */
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
 
-  // ✅ Role always from backend auth
-  const role: UserRole = user?.role ?? UserRole.TEACHER;
+  const role = user?.role;
+  console.log('USER FROM AUTH:', user);
+console.log('ROLE VALUE:', role);
+console.log('ROLE TYPE:', typeof role);
+console.log('EXPECTED OWNER:', UserRole.OWNER);
+
+  const isLoggedIn = !!user;
+
+  /* ==================== BLOCK RENDER UNTIL AUTH READY ==================== */
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-500">
+        Loading...
+      </div>
+    );
+  }
 
   /* ==================== DATA ==================== */
   const [zones, setZones] = useState<ParkingZone[]>([]);
@@ -45,8 +60,10 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadAllData();
-  }, []);
+    if (isLoggedIn) {
+      loadAllData();
+    }
+  }, [isLoggedIn]);
 
   /* ==================== LOGOUT ==================== */
   const handleLogout = () => {
@@ -170,74 +187,32 @@ const App: React.FC = () => {
   /* ==================== UI ==================== */
   return (
     <div className="min-h-screen flex bg-slate-50 text-slate-900 relative">
-      <Sidebar
-        role={role}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        isAdminAuthenticated={user?.role === UserRole.ADMIN}
-        onLogout={handleLogout}
-      />
+      {isLoggedIn && (
+        <Sidebar
+          role={role}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          isAuthenticated={isLoggedIn}
+          onLogout={handleLogout}
+        />
+      )}
 
       <div className="flex-1 flex flex-col">
-        <Navbar
-          notificationCount={notifications.filter(n => !n.read).length}
-          onToggleNotifications={() =>
-            setIsNotificationsOpen(prev => !prev)
-          }
-          onToggleSidebar={() => setIsSidebarOpen(true)}
-        />
-
-        {/* 🔔 NOTIFICATIONS */}
-        {isNotificationsOpen && (
-          <div className="fixed top-16 right-4 z-[9999] w-80 max-h-[70vh] bg-white shadow-2xl rounded-2xl border overflow-y-auto">
-            <div className="p-4 border-b flex justify-between">
-              <h3 className="font-black text-sm">Notifications</h3>
-              <button
-                onClick={() => setNotifications([])}
-                className="text-xs text-indigo-600 font-bold"
-              >
-                Clear
-              </button>
-            </div>
-
-            {notifications.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 text-sm">
-                No notifications
-              </div>
-            ) : (
-              notifications.map(n => (
-                <div
-                  key={n.id}
-                  className={`p-3 border-b cursor-pointer ${
-                    n.read ? 'opacity-60' : 'bg-indigo-50'
-                  }`}
-                  onClick={() => markAsRead(n.id)}
-                >
-                  <strong className="text-xs block">{n.title}</strong>
-                  <p className="text-xs text-slate-600">{n.message}</p>
-
-                  {n.actionZoneId && (
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        restoreZone(n.actionZoneId);
-                        markAsRead(n.id);
-                      }}
-                      className="mt-2 text-xs text-emerald-600 font-bold"
-                    >
-                      Undo
-                    </button>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+        {isLoggedIn && (
+          <Navbar
+            notificationCount={notifications.filter(n => !n.read).length}
+            onToggleNotifications={() =>
+              setIsNotificationsOpen(prev => !prev)
+            }
+            onToggleSidebar={() => setIsSidebarOpen(true)}
+          />
         )}
 
         <main className="flex-grow container mx-auto px-4 py-8">
-          {/* 🔐 AUTH GATE */}
-          {!user ? (
-            <AdminLogin />
+          {!isLoggedIn ? (
+            <Login />
+          ) : role === UserRole.OWNER ? (
+            <OwnerDashboard />
           ) : role === UserRole.ADMIN ? (
             <AdminDashboard
               zones={zones}

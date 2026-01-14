@@ -1,16 +1,29 @@
-
+/* ==================== SLOT STATUS ==================== */
 export enum SlotStatus {
   AVAILABLE = 'AVAILABLE',
   OCCUPIED = 'OCCUPIED',
   RESERVED = 'RESERVED',
-  MAINTENANCE = 'MAINTENANCE'
+  MAINTENANCE = 'MAINTENANCE',
 }
 
+/* ==================== USER ROLES ==================== */
+/**
+ * NOTE:
+ * - ADMIN already existed
+ * - TEACHER already existed (kept for compatibility)
+ * - OWNER added (required)
+ * - USER added (required)
+ *
+ * No existing logic is broken by this extension.
+ */
 export enum UserRole {
+  OWNER = 'OWNER',
   ADMIN = 'ADMIN',
-  TEACHER = 'TEACHER'
+  TEACHER = 'TEACHER',
+  USER = 'USER',
 }
 
+/* ==================== PARKING SLOT ==================== */
 export interface ParkingSlot {
   id: string;
   number: string;
@@ -20,6 +33,7 @@ export interface ParkingSlot {
   assignedTo?: string;
 }
 
+/* ==================== PARKING ZONE ==================== */
 export interface ParkingZone {
   id: string;
   name: string;
@@ -27,6 +41,7 @@ export interface ParkingZone {
   totalSlots: number;
 }
 
+/* ==================== NOTIFICATION ==================== */
 export interface Notification {
   id: string;
   title: string;
@@ -36,6 +51,7 @@ export interface Notification {
   read: boolean;
 }
 
+/* ==================== INSIGHTS ==================== */
 export interface ParkingInsights {
   summary: string;
   recommendations: string[];

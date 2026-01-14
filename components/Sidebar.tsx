@@ -3,10 +3,10 @@ import { UserRole } from '../types';
 import { MapPin, ShieldCheck, User, X, LogOut } from 'lucide-react';
 
 interface SidebarProps {
-  role: UserRole;
+  role: UserRole | undefined;
   isOpen: boolean;
   onClose: () => void;
-  isAdminAuthenticated: boolean;
+  isAuthenticated: boolean; // ✅ correct prop
   onLogout: () => void;
 }
 
@@ -14,9 +14,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   role,
   isOpen,
   onClose,
-  isAdminAuthenticated,
+  isAuthenticated, // ✅ FIXED
   onLogout,
 }) => {
+  // ✅ OWNER is also ADMIN
+  const isAdmin =
+    role === UserRole.ADMIN || role === UserRole.OWNER;
+
   return (
     <aside
       className={`
@@ -57,10 +61,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           </p>
 
           <div className="space-y-2">
-            {/* User Portal (always visible) */}
+            {/* User Portal */}
             <div
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold ${
-                role === UserRole.TEACHER
+                !isAdmin
                   ? 'bg-white text-indigo-600 shadow-lg scale-[1.02]'
                   : 'text-indigo-100 opacity-80'
               }`}
@@ -69,11 +73,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               User Portal
             </div>
 
-            {/* Admin Portal (only if ADMIN) */}
-            {role === UserRole.ADMIN && (
-              <div
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-white text-indigo-600 shadow-lg scale-[1.02]`}
-              >
+            {/* Admin Portal (ADMIN + OWNER) */}
+            {isAdmin && (
+              <div className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-white text-indigo-600 shadow-lg scale-[1.02]">
                 <ShieldCheck size={18} />
                 Admin Portal
               </div>
@@ -81,12 +83,15 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Logout */}
-        {isAdminAuthenticated && (
+        {/* Logout — visible for ALL logged-in users */}
+        {isAuthenticated && (
           <div className="mt-auto pt-4">
             <button
               onClick={onLogout}
-              className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-rose-600 bg-rose-50 border border-rose-100 font-black text-xs uppercase tracking-widest hover:bg-rose-100 transition-all active:scale-95"
+              className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl
+                         text-rose-600 bg-rose-50 border border-rose-100
+                         font-black text-xs uppercase tracking-widest
+                         hover:bg-rose-100 transition-all active:scale-95"
             >
               <LogOut size={18} />
               Sign Out
