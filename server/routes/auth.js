@@ -6,10 +6,44 @@ import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
-/* ---------- LOGIN ---------- */
+/* =====================================================
+   USER SELF-REGISTRATION (PUBLIC)
+   ROLE IS FORCED TO STUDENT
+===================================================== */
+router.post('/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'All fields required' });
+    }
+
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'STUDENT', // 🔒 FORCED
+    });
+
+    res.status(201).json({ message: 'Account created successfully' });
+  } catch (err) {
+    console.error('REGISTER ERROR:', err);
+    res.status(500).json({ message: 'Registration failed' });
+  }
+});
+
+/* =====================================================
+   LOGIN (UNCHANGED)
+===================================================== */
 router.post('/login', async (req, res) => {
   try {
-    // 🔒 Safety checks (prevents 500 error)
     if (!req.body) {
       return res.status(400).json({ message: 'Request body missing' });
     }
@@ -55,7 +89,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
-/* ---------- CHANGE PASSWORD ---------- */
+/* =====================================================
+   CHANGE PASSWORD (UNCHANGED)
+===================================================== */
 router.put('/change-password', authenticate, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -84,7 +120,9 @@ router.put('/change-password', authenticate, async (req, res) => {
   }
 });
 
-/* ---------- FORGOT PASSWORD (OTP) ---------- */
+/* =====================================================
+   FORGOT PASSWORD (OTP) (UNCHANGED)
+===================================================== */
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -98,10 +136,10 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     user.otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+    user.otpExpiry = Date.now() + 5 * 60 * 1000;
     await user.save();
 
-    console.log('OTP:', user.otp); // replace with email service later
+    console.log('OTP:', user.otp); // replace with email service
 
     res.json({ message: 'OTP sent' });
   } catch (err) {
@@ -110,7 +148,9 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-/* ---------- VERIFY OTP ---------- */
+/* =====================================================
+   VERIFY OTP (UNCHANGED)
+===================================================== */
 router.post('/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -132,7 +172,9 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-/* ---------- RESET PASSWORD ---------- */
+/* =====================================================
+   RESET PASSWORD (UNCHANGED)
+===================================================== */
 router.post('/reset-password', async (req, res) => {
   try {
     const { email, newPassword } = req.body;
@@ -155,6 +197,42 @@ router.post('/reset-password', async (req, res) => {
   } catch (err) {
     console.error('RESET PASSWORD ERROR:', err);
     res.status(500).json({ message: 'Password reset failed' });
+  }
+});
+
+/* =====================================================
+   CREATE ADMIN / TEACHER (OWNER ONLY)
+===================================================== */
+router.post('/create-user', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'OWNER') {
+      return res.status(403).json({ message: 'Only OWNER can create users' });
+    }
+
+    const { name, email, password, role } = req.body;
+
+    if (!['ADMIN', 'TEACHER'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+    });
+
+    res.status(201).json({ message: 'User created successfully' });
+  } catch (err) {
+    console.error('CREATE USER ERROR:', err);
+    res.status(500).json({ message: 'User creation failed' });
   }
 });
 

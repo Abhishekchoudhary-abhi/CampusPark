@@ -1,7 +1,15 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ParkingSlot, SlotStatus, ParkingZone } from '../types';
-import { CheckCircle, XCircle, Clock, Lock, RefreshCw, Plus, Trash2, LayoutGrid, Edit3, Save, X, Check } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  LayoutGrid,
+  Edit3,
+  Check,
+  RotateCcw,
+  RefreshCw,
+  XCircle,
+} from 'lucide-react';
 
 interface AdminDashboardProps {
   zones: ParkingZone[];
@@ -11,17 +19,22 @@ interface AdminDashboardProps {
   onRemoveSlot: (slotId: string) => void;
   onAddZone: (name: string, description: string) => void;
   onUpdateZone: (zoneId: string, name: string, description: string) => void;
+  onRemoveZone: (zoneId: string) => void;
+  onRestoreZone: (zoneId: string) => void;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
-  zones, 
-  slots, 
-  onUpdateSlot, 
-  onAddSlot, 
+const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  zones,
+  slots,
+  onUpdateSlot,
+  onAddSlot,
   onRemoveSlot,
   onAddZone,
   onUpdateZone,
+  onRemoveZone,
+  onRestoreZone,
 }) => {
+  /* ---------------- STATE ---------------- */
   const [isAddingZone, setIsAddingZone] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
 
@@ -32,55 +45,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newSlotNumber, setNewSlotNumber] = useState('');
   const slotInputRef = useRef<HTMLInputElement>(null);
 
+  const [pendingDeleteZones, setPendingDeleteZones] = useState<string[]>([]);
+
+  /* ---------------- EFFECTS ---------------- */
   useEffect(() => {
     if (addingSlotToZone && slotInputRef.current) {
       slotInputRef.current.focus();
     }
   }, [addingSlotToZone]);
 
+  /* ---------------- HELPERS ---------------- */
   const getStatusColor = (status: SlotStatus) => {
     switch (status) {
-      case SlotStatus.AVAILABLE: return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case SlotStatus.OCCUPIED: return 'bg-rose-50 text-rose-700 border-rose-100';
-      case SlotStatus.RESERVED: return 'bg-amber-50 text-amber-700 border-amber-100';
-      case SlotStatus.MAINTENANCE: return 'bg-slate-50 text-slate-700 border-slate-100';
+      case SlotStatus.AVAILABLE:
+        return 'bg-emerald-100 text-emerald-700';
+      case SlotStatus.OCCUPIED:
+        return 'bg-rose-100 text-rose-700';
+      case SlotStatus.RESERVED:
+        return 'bg-amber-100 text-amber-700';
+      case SlotStatus.MAINTENANCE:
+        return 'bg-slate-100 text-slate-700';
     }
   };
 
-  const getStatusIcon = (status: SlotStatus) => {
-    switch (status) {
-      case SlotStatus.AVAILABLE: return <CheckCircle size={14} />;
-      case SlotStatus.OCCUPIED: return <XCircle size={14} />;
-      case SlotStatus.RESERVED: return <Lock size={14} />;
-      case SlotStatus.MAINTENANCE: return <Clock size={14} />;
-    }
-  };
-
-  const handleStartAddingSlot = (zoneId: string) => {
-    setAddingSlotToZone(zoneId);
-    setNewSlotNumber('');
-  };
-
-  const handleCancelAddingSlot = () => {
-    setAddingSlotToZone(null);
-    setNewSlotNumber('');
-  };
-
-  const handleSaveSlot = (zoneId: string) => {
-    if (newSlotNumber.trim()) {
-      onAddSlot(zoneId, newSlotNumber.trim());
-      setAddingSlotToZone(null);
-      setNewSlotNumber('');
-    }
-  };
-
+  /* ---------------- ZONE ACTIONS ---------------- */
   const handleAddZoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newZoneName.trim()) {
-      onAddZone(newZoneName.trim(), '');
-      setNewZoneName('');
-      setIsAddingZone(false);
-    }
+    if (!newZoneName.trim()) return;
+
+    onAddZone(newZoneName.trim(), '');
+    setNewZoneName('');
+    setIsAddingZone(false);
   };
 
   const startEditingZone = (zone: ParkingZone) => {
@@ -88,197 +83,202 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setEditName(zone.name);
   };
 
-  const cancelEditingZone = () => {
+  const saveZoneEdit = (zoneId: string) => {
+    if (!editName.trim()) return;
+    onUpdateZone(zoneId, editName.trim(), '');
     setEditingZoneId(null);
   };
 
-  const saveZoneEdit = (zoneId: string) => {
-    if (editName.trim()) {
-      onUpdateZone(zoneId, editName.trim(), '');
-      setEditingZoneId(null);
-    }
+  const handleDeleteZone = (zoneId: string) => {
+    if (!window.confirm('Block will be soft-deleted. You can undo this.')) return;
+    setPendingDeleteZones(prev => [...prev, zoneId]);
+    onRemoveZone(zoneId);
   };
 
+  const handleUndoDeleteZone = (zoneId: string) => {
+    setPendingDeleteZones(prev => prev.filter(id => id !== zoneId));
+    onRestoreZone(zoneId);
+  };
+
+  /* ---------------- SLOT ACTIONS ---------------- */
+  const handleSaveSlot = (zoneId: string) => {
+    if (!newSlotNumber.trim()) return;
+    onAddSlot(zoneId, newSlotNumber.trim());
+    setNewSlotNumber('');
+    setAddingSlotToZone(null);
+  };
+
+  /* ---------------- UI ---------------- */
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-12 pb-20">
+
+      {/* HEADER */}
+      <header className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Admin Control</h2>
-          <p className="text-slate-500 font-medium">Manage blocks, slots, and real-time statuses.</p>
+          <h2 className="text-3xl font-black text-slate-800">Admin Control</h2>
+          <p className="text-slate-500">Manage blocks and slots</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setIsAddingZone(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95"
-          >
-            <LayoutGrid size={16} /> Add Block
-          </button>
-        </div>
+        <button
+          onClick={() => setIsAddingZone(true)}
+          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase"
+        >
+          <LayoutGrid size={16} /> Add Block
+        </button>
       </header>
 
-      {/* Add Zone Form */}
+      {/* ADD BLOCK FORM */}
       {isAddingZone && (
-        <div className="bg-white p-8 rounded-[2.5rem] border border-indigo-100 shadow-xl animate-in zoom-in-95">
-          <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
-            <Plus className="text-indigo-600" /> NEW PARKING BLOCK
-          </h3>
-          <form onSubmit={handleAddZoneSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Block Name</label>
-              <input 
-                type="text" 
-                value={newZoneName}
-                onChange={(e) => setNewZoneName(e.target.value)}
-                placeholder="e.g. South Campus Lot"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                required
-              />
-            </div>
-            <div className="md:col-span-2 flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => setIsAddingZone(false)} className="px-6 py-3 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Cancel</button>
-              <button type="submit" className="px-8 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100">Create Block</button>
-            </div>
-          </form>
-        </div>
+        <form
+          onSubmit={handleAddZoneSubmit}
+          className="bg-white p-6 rounded-2xl border flex gap-3"
+        >
+          <input
+            value={newZoneName}
+            onChange={e => setNewZoneName(e.target.value)}
+            placeholder="Block name"
+            className="flex-1 px-4 py-2 border rounded-xl font-bold"
+            autoFocus
+          />
+          <button className="px-5 py-2 bg-indigo-600 text-white rounded-xl font-black text-xs">
+            <Check size={14} /> Create
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAddingZone(false)}
+            className="px-4 py-2 bg-slate-100 rounded-xl font-black text-xs"
+          >
+            Cancel
+          </button>
+        </form>
       )}
 
-      {/* Zones / Blocks */}
+      {/* ZONES */}
       {zones.map(zone => {
         const zoneSlots = slots.filter(s => s.zone === zone.id);
-        const isEditing = editingZoneId === zone.id;
-        const isAddingSlot = addingSlotToZone === zone.id;
-        
+        const hasActiveReservations = zoneSlots.some(
+          s => s.status === SlotStatus.RESERVED || s.status === SlotStatus.OCCUPIED
+        );
+        const isPendingDelete = pendingDeleteZones.includes(zone.id);
+
         return (
-          <section key={zone.id} className="space-y-6">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-10 bg-indigo-600 rounded-full"></div>
-                {isEditing ? (
-                  <div className="flex flex-col md:flex-row gap-3 items-end">
-                    <div className="space-y-1">
-                      <input 
-                        type="text" 
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="px-3 py-1 bg-white border border-indigo-200 rounded-lg text-lg font-black text-slate-800 outline-none"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => saveZoneEdit(zone.id)} className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-                        <Save size={16} />
-                      </button>
-                      <button onClick={cancelEditingZone} className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors">
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
+          <section
+            key={zone.id}
+            className={`p-4 rounded-xl border space-y-4 ${
+              isPendingDelete ? 'bg-rose-50 border-rose-200' : 'bg-white'
+            }`}
+          >
+            {/* ZONE HEADER */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                {editingZoneId === zone.id ? (
+                  <>
+                    <input
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      className="px-2 py-1 border rounded"
+                    />
+                    <button onClick={() => saveZoneEdit(zone.id)}>
+                      <Check size={14} />
+                    </button>
+                  </>
                 ) : (
-                  <div>
-                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => startEditingZone(zone)}>
-                      <h3 className="text-xl font-black text-slate-800 tracking-tight">{zone.name}</h3>
-                      <Edit3 size={14} className="text-slate-300 group-hover:text-indigo-600 transition-colors" />
-                    </div>
-                  </div>
+                  <>
+                    <h3 className="text-xl font-black">{zone.name}</h3>
+                    <Edit3
+                      size={14}
+                      className="cursor-pointer text-slate-400"
+                      onClick={() => startEditingZone(zone)}
+                    />
+                  </>
                 )}
               </div>
-              <button 
-                onClick={() => handleStartAddingSlot(zone.id)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-                  isAddingSlot 
-                    ? 'bg-indigo-600 text-white border-transparent' 
-                    : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 border-transparent hover:border-indigo-100'
-                }`}
-              >
-                <Plus size={14} /> Add Slot
-              </button>
+
+              <div className="flex gap-2">
+                {isPendingDelete && (
+                  <button
+                    onClick={() => handleUndoDeleteZone(zone.id)}
+                    className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-black"
+                  >
+                    <RotateCcw size={14} /> Undo
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setAddingSlotToZone(zone.id)}
+                  disabled={isPendingDelete}
+                  className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-black"
+                >
+                  <Plus size={14} /> Add Slot
+                </button>
+
+                <button
+                  onClick={() => handleDeleteZone(zone.id)}
+                  disabled={hasActiveReservations || isPendingDelete}
+                  className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-black disabled:opacity-40"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
             </div>
 
-            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {/* Inline Add Slot Input */}
-              {isAddingSlot && (
-                <div className="bg-indigo-50/50 rounded-3xl p-6 border-2 border-dashed border-indigo-200 flex flex-col justify-between animate-in zoom-in-95 min-h-[180px]">
-                  <div>
-                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-2">New Slot Number</span>
-                    <input 
-                      ref={slotInputRef}
-                      type="text" 
-                      value={newSlotNumber}
-                      onChange={(e) => setNewSlotNumber(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveSlot(zone.id);
-                        if (e.key === 'Escape') handleCancelAddingSlot();
-                      }}
-                      placeholder="e.g. A-107"
-                      className="w-full bg-white px-3 py-2 border border-indigo-100 rounded-xl text-lg font-black text-indigo-600 outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    />
+            {/* ADD SLOT INPUT */}
+            {addingSlotToZone === zone.id && (
+              <div className="flex gap-2">
+                <input
+                  ref={slotInputRef}
+                  value={newSlotNumber}
+                  onChange={e => setNewSlotNumber(e.target.value)}
+                  placeholder="Slot number"
+                  className="flex-1 px-3 py-2 border rounded-xl"
+                />
+                <button
+                  onClick={() => handleSaveSlot(zone.id)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black"
+                >
+                  <Check size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* SLOTS */}
+            <div className="grid grid-cols-3 gap-4">
+              {zoneSlots.map(slot => (
+                <div key={slot.id} className="border p-4 rounded-xl">
+                  <div className="flex justify-between mb-2">
+                    <span
+                      className={`px-2 py-1 text-xs rounded ${getStatusColor(
+                        slot.status
+                      )}`}
+                    >
+                      {slot.status}
+                    </span>
+                    <button onClick={() => onRemoveSlot(slot.id)}>
+                      <Trash2 size={14} />
+                    </button>
                   </div>
+
+                  <h4 className="text-2xl font-black">{slot.number}</h4>
+
                   <div className="flex gap-2 mt-4">
-                    <button 
-                      onClick={() => handleSaveSlot(zone.id)}
-                      className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1 hover:bg-indigo-700 transition-colors"
+                    <button
+                      onClick={() =>
+                        onUpdateSlot(slot.id, SlotStatus.AVAILABLE)
+                      }
+                      className="flex-1 bg-emerald-100 text-xs rounded py-1"
                     >
-                      <Check size={14} /> Save
+                      <RefreshCw size={12} /> Clear
                     </button>
-                    <button 
-                      onClick={handleCancelAddingSlot}
-                      className="flex-1 bg-white text-slate-400 py-2 rounded-xl text-[10px] font-black uppercase border border-slate-100 hover:text-slate-600 transition-colors"
+                    <button
+                      onClick={() =>
+                        onUpdateSlot(slot.id, SlotStatus.OCCUPIED)
+                      }
+                      className="flex-1 bg-rose-100 text-xs rounded py-1"
                     >
-                      <X size={14} /> Cancel
+                      <XCircle size={12} /> Full
                     </button>
                   </div>
                 </div>
-              )}
-
-              {zoneSlots.length === 0 && !isAddingSlot ? (
-                <div className="col-span-full py-12 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-slate-400">
-                  <LayoutGrid size={32} className="opacity-20 mb-3" />
-                  <p className="text-xs font-bold uppercase tracking-widest">No slots in this block yet</p>
-                </div>
-              ) : (
-                zoneSlots.map(slot => (
-                  <div 
-                    key={slot.id} 
-                    className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between transition-all hover:shadow-lg hover:border-indigo-100 group min-h-[180px]"
-                  >
-                    <div>
-                      <div className="flex justify-between items-start mb-3">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border ${getStatusColor(slot.status)}`}>
-                          {getStatusIcon(slot.status)}
-                          {slot.status}
-                        </div>
-                        <button 
-                          onClick={() => onRemoveSlot(slot.id)}
-                          className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                          title="Remove Slot"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                      <h4 className="text-3xl font-black text-slate-800 mb-3 tracking-tighter">{slot.number}</h4>
-                    </div>
-
-                    <div className="mt-8 pt-4 border-t border-slate-50">
-                       <p className="text-[10px] font-bold text-slate-400 mb-4 uppercase">
-                        Updated {new Date(slot.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button 
-                          onClick={() => onUpdateSlot(slot.id, SlotStatus.AVAILABLE)}
-                          className="px-3 py-2 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-xl hover:bg-emerald-100 transition-colors uppercase flex items-center justify-center gap-1.5 active:scale-95"
-                        >
-                          <RefreshCw size={12} /> Clear
-                        </button>
-                        <button 
-                          onClick={() => onUpdateSlot(slot.id, SlotStatus.OCCUPIED)}
-                          className="px-3 py-2 bg-rose-50 text-rose-600 text-[10px] font-black rounded-xl hover:bg-rose-100 transition-colors uppercase flex items-center justify-center gap-1.5 active:scale-95"
-                        >
-                          <XCircle size={12} /> Full
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+              ))}
             </div>
           </section>
         );

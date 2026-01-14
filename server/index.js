@@ -25,18 +25,27 @@ app.use(
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   })
 );
 
 // ✅ Parse JSON bodies
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
 /* ==================== DATABASE ==================== */
+
+if (!process.env.MONGODB_URI) {
+  console.error('❌ MONGODB_URI not set in environment');
+  process.exit(1);
+}
 
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB Atlas connected'))
-  .catch(err => console.error('❌ MongoDB error:', err));
+  .catch(err => {
+    console.error('❌ MongoDB error:', err);
+    process.exit(1);
+  });
 
 /* ==================== ROUTES ==================== */
 
@@ -50,12 +59,20 @@ app.use('/api/zones', zoneRoutes);
 
 // ✅ Health check
 app.get('/', (req, res) => {
-  res.send('CampusPark Backend is running');
+  res.status(200).send('CampusPark Backend is running');
+});
+
+/* ==================== ERROR HANDLER ==================== */
+
+// Catch unknown routes
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
 });
 
 /* ==================== SERVER ==================== */
 
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`🚀 Backend running on port ${PORT}`);
 });

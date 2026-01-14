@@ -1,19 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserRole, ParkingSlot, SlotStatus, Notification, ParkingZone } from './types';
+import {
+  UserRole,
+  ParkingSlot,
+  SlotStatus,
+  Notification,
+  ParkingZone,
+} from './types';
+
 import AdminDashboard from './components/AdminDashboard';
 import UserDashboard from './components/UserDashboard';
-import AdminLogin from './components/AdminLogin';
+import AdminLogin from "./components/Login";
+
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+
 import { storageService } from './services/storageService';
-import { Bell } from 'lucide-react';
+import { useAuth } from './context/AuthContext';
 
 const App: React.FC = () => {
   console.log('API BASE:', import.meta.env.VITE_API_BASE);
 
-  const [role, setRole] = useState<UserRole>(UserRole.TEACHER);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  /* ==================== AUTH ==================== */
+  const { user, logout } = useAuth();
 
+  // ✅ Role always from backend auth
+  const role: UserRole = user?.role ?? UserRole.TEACHER;
+
+  /* ==================== DATA ==================== */
   const [zones, setZones] = useState<ParkingZone[]>([]);
   const [slots, setSlots] = useState<ParkingSlot[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -21,7 +34,7 @@ const App: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  /* -------------------- LOAD DATA (MongoDB) -------------------- */
+  /* ==================== LOAD DATA ==================== */
   const loadAllData = async () => {
     const [z, s] = await Promise.all([
       storageService.loadZones(),
@@ -35,18 +48,13 @@ const App: React.FC = () => {
     loadAllData();
   }, []);
 
-  /* -------------------- HANDLERS -------------------- */
-  const handleRoleChange = (newRole: UserRole) => {
-    setRole(newRole);
+  /* ==================== LOGOUT ==================== */
+  const handleLogout = () => {
+    logout();
     setIsSidebarOpen(false);
   };
 
-  const handleAdminLogout = () => {
-    setIsAdminAuthenticated(false);
-    setRole(UserRole.TEACHER);
-    setIsSidebarOpen(false);
-  };
-
+  /* ==================== SLOT ACTIONS ==================== */
   const updateSlotStatus = useCallback(
     async (slotId: string, newStatus: SlotStatus) => {
       const slot = slots.find(s => s.id === slotId);
@@ -57,12 +65,16 @@ const App: React.FC = () => {
         updatedAt: new Date().toISOString(),
       });
 
-      if (slot.status === SlotStatus.OCCUPIED && newStatus === SlotStatus.AVAILABLE) {
-        const zoneName = zones.find(z => z.id === slot.zone)?.name || 'Campus';
+      if (
+        slot.status === SlotStatus.OCCUPIED &&
+        newStatus === SlotStatus.AVAILABLE
+      ) {
+        const zoneName =
+          zones.find(z => z.id === slot.zone)?.name || 'Campus';
 
         setNotifications(n => [
           {
-            id: Math.random().toString(36).slice(2),
+            id: crypto.randomUUID(),
             title: 'Parking Spot Free!',
             message: `Slot ${slot.number} in ${zoneName} is now available.`,
             timestamp: new Date().toLocaleTimeString([], {
@@ -97,108 +109,153 @@ const App: React.FC = () => {
     loadAllData();
   }, []);
 
+  /* ==================== ZONE ACTIONS ==================== */
   const addZone = useCallback(async (name: string, description: string) => {
-    await storageService.addZone({ id: '', name, description, totalSlots: 0 });
+    await storageService.addZone({
+      id: '',
+      name,
+      description,
+      totalSlots: 0,
+    });
     loadAllData();
   }, []);
 
-  const updateZone = useCallback(async (zoneId: string, name: string, description: string) => {
-    await storageService.addZone({ id: zoneId, name, description, totalSlots: 0 });
+  const updateZone = useCallback(
+    async (zoneId: string, name: string, description: string) => {
+      await storageService.updateZone(zoneId, { name, description });
+      loadAllData();
+    },
+    []
+  );
+
+  const removeZone = useCallback(async (zoneId: string) => {
+    await storageService.deleteZone(zoneId);
+
+    setNotifications(n => [
+      {
+        id: crypto.randomUUID(),
+        title: 'Block deleted',
+        message: 'Click Undo to restore this block',
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        type: 'warning',
+        read: false,
+        actionZoneId: zoneId,
+      },
+      ...n,
+    ]);
+
     loadAllData();
   }, []);
 
+  const restoreZone = useCallback(async (zoneId: string) => {
+    await storageService.restoreZone(zoneId);
+    loadAllData();
+  }, []);
+
+  /* ==================== USER ==================== */
   const reserveSlot = useCallback(
     (slotId: string) => updateSlotStatus(slotId, SlotStatus.RESERVED),
     [updateSlotStatus]
   );
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, read: true } : n))
+    );
   };
 
-  /* -------------------- UI -------------------- */
+  /* ==================== UI ==================== */
   return (
-   <div className="min-h-screen flex bg-slate-50 overflow-x-hidden overflow-y-auto text-slate-900 relative">
-
+    <div className="min-h-screen flex bg-slate-50 text-slate-900 relative">
       <Sidebar
         role={role}
-        setRole={handleRoleChange}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        isAdminAuthenticated={isAdminAuthenticated}
-        onLogout={handleAdminLogout}
+        isAdminAuthenticated={user?.role === UserRole.ADMIN}
+        onLogout={handleLogout}
       />
 
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      <div className="flex-1 flex flex-col h-screen overflow-y-auto relative">
+      <div className="flex-1 flex flex-col">
         <Navbar
           notificationCount={notifications.filter(n => !n.read).length}
-          onToggleNotifications={() => setIsNotificationsOpen(o => !o)}
+          onToggleNotifications={() =>
+            setIsNotificationsOpen(prev => !prev)
+          }
           onToggleSidebar={() => setIsSidebarOpen(true)}
         />
 
-        <main className="flex-grow container mx-auto px-4 md:px-6 py-8">
-          {isNotificationsOpen && (
-           <div className="absolute top-16 right-4 w-80 max-h-[70vh] bg-white shadow-xl rounded-2xl z-50 overflow-y-auto">
-
-              <div className="p-4 border-b flex justify-between">
-                <h3 className="font-bold text-sm">Notifications</h3>
-                <button
-                  onClick={() => setNotifications([])}
-                  className="text-xs text-indigo-600"
-                >
-                  Clear
-                </button>
-              </div>
-              <div>
-                {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400">
-                    <Bell className="mx-auto mb-2 opacity-30" />
-                    No alerts
-                  </div>
-                ) : (
-                  notifications.map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => markAsRead(n.id)}
-                      className={`p-3 border-b cursor-pointer ${
-                        n.read ? 'opacity-60' : 'bg-indigo-50'
-                      }`}
-                    >
-                      <strong className="text-xs">{n.title}</strong>
-                      <p className="text-xs text-slate-600">{n.message}</p>
-                    </div>
-                  ))
-                )}
-              </div>
+        {/* 🔔 NOTIFICATIONS */}
+        {isNotificationsOpen && (
+          <div className="fixed top-16 right-4 z-[9999] w-80 max-h-[70vh] bg-white shadow-2xl rounded-2xl border overflow-y-auto">
+            <div className="p-4 border-b flex justify-between">
+              <h3 className="font-black text-sm">Notifications</h3>
+              <button
+                onClick={() => setNotifications([])}
+                className="text-xs text-indigo-600 font-bold"
+              >
+                Clear
+              </button>
             </div>
-          )}
 
-          {role === UserRole.ADMIN ? (
-            isAdminAuthenticated ? (
-              <AdminDashboard
-                zones={zones}
-                slots={slots}
-                onUpdateSlot={updateSlotStatus}
-                onAddSlot={addSlot}
-                onRemoveSlot={removeSlot}
-                onAddZone={addZone}
-                onUpdateZone={updateZone}
-              />
+            {notifications.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 text-sm">
+                No notifications
+              </div>
             ) : (
-              <AdminLogin
-                onLoginSuccess={() => setIsAdminAuthenticated(true)}
-                onCancel={() => handleRoleChange(UserRole.TEACHER)}
-              />
-            )
+              notifications.map(n => (
+                <div
+                  key={n.id}
+                  className={`p-3 border-b cursor-pointer ${
+                    n.read ? 'opacity-60' : 'bg-indigo-50'
+                  }`}
+                  onClick={() => markAsRead(n.id)}
+                >
+                  <strong className="text-xs block">{n.title}</strong>
+                  <p className="text-xs text-slate-600">{n.message}</p>
+
+                  {n.actionZoneId && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        restoreZone(n.actionZoneId);
+                        markAsRead(n.id);
+                      }}
+                      className="mt-2 text-xs text-emerald-600 font-bold"
+                    >
+                      Undo
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        <main className="flex-grow container mx-auto px-4 py-8">
+          {/* 🔐 AUTH GATE */}
+          {!user ? (
+            <AdminLogin />
+          ) : role === UserRole.ADMIN ? (
+            <AdminDashboard
+              zones={zones}
+              slots={slots}
+              onUpdateSlot={updateSlotStatus}
+              onAddSlot={addSlot}
+              onRemoveSlot={removeSlot}
+              onAddZone={addZone}
+              onUpdateZone={updateZone}
+              onRemoveZone={removeZone}
+              onRestoreZone={restoreZone}
+            />
           ) : (
-            <UserDashboard zones={zones} slots={slots} onReserve={reserveSlot} />
+            <UserDashboard
+              zones={zones}
+              slots={slots}
+              onReserve={reserveSlot}
+            />
           )}
         </main>
 

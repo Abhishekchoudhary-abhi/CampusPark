@@ -1,25 +1,31 @@
-
 import React from 'react';
 import { UserRole } from '../types';
 import { MapPin, ShieldCheck, User, X, LogOut } from 'lucide-react';
 
 interface SidebarProps {
   role: UserRole;
-  setRole: (role: UserRole) => void;
   isOpen: boolean;
   onClose: () => void;
   isAdminAuthenticated: boolean;
   onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, setRole, isOpen, onClose, isAdminAuthenticated, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  role,
+  isOpen,
+  onClose,
+  isAdminAuthenticated,
+  onLogout,
+}) => {
   return (
-    <aside className={`
-      fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col h-screen 
-      transform transition-transform duration-300 ease-in-out
-      md:relative md:translate-x-0
-      ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-    `}>
+    <aside
+      className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col h-screen 
+        transform transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}
+    >
       {/* Brand Section */}
       <div className="p-5 border-b border-slate-50 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -27,13 +33,15 @@ const Sidebar: React.FC<SidebarProps> = ({ role, setRole, isOpen, onClose, isAdm
             <MapPin className="text-white" size={18} strokeWidth={2.5} />
           </div>
           <div className="flex flex-col">
-            <h1 className="font-black text-xl text-slate-800 tracking-tight leading-none">CampusPark</h1>
+            <h1 className="font-black text-xl text-slate-800 tracking-tight leading-none">
+              CampusPark
+            </h1>
             <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest mt-1 whitespace-nowrap">
               Parking Assistance System
             </span>
           </div>
         </div>
-        <button 
+        <button
           onClick={onClose}
           className="p-2 text-slate-400 hover:text-slate-600 md:hidden"
         >
@@ -45,40 +53,38 @@ const Sidebar: React.FC<SidebarProps> = ({ role, setRole, isOpen, onClose, isAdm
       <div className="p-4 flex-grow flex flex-col gap-4">
         <div className="bg-indigo-600 rounded-3xl p-5 shadow-xl shadow-indigo-100 space-y-4">
           <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-2 px-1">
-            Access Portals
+            Access Portal
           </p>
-          
+
           <div className="space-y-2">
-            <button 
-              onClick={() => setRole(UserRole.TEACHER)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-200 ${
-                role === UserRole.TEACHER 
-                ? 'bg-white text-indigo-600 shadow-lg scale-[1.02]' 
-                : 'text-indigo-100 hover:bg-white/10'
+            {/* User Portal (always visible) */}
+            <div
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold ${
+                role === UserRole.TEACHER
+                  ? 'bg-white text-indigo-600 shadow-lg scale-[1.02]'
+                  : 'text-indigo-100 opacity-80'
               }`}
             >
               <User size={18} />
               User Portal
-            </button>
+            </div>
 
-            <button 
-              onClick={() => setRole(UserRole.ADMIN)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-200 ${
-                role === UserRole.ADMIN 
-                ? 'bg-white text-indigo-600 shadow-lg scale-[1.02]' 
-                : 'text-indigo-100 hover:bg-white/10'
-              }`}
-            >
-              <ShieldCheck size={18} />
-              Admin Portal
-            </button>
+            {/* Admin Portal (only if ADMIN) */}
+            {role === UserRole.ADMIN && (
+              <div
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-white text-indigo-600 shadow-lg scale-[1.02]`}
+              >
+                <ShieldCheck size={18} />
+                Admin Portal
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Admin Specific Logout */}
-        {role === UserRole.ADMIN && isAdminAuthenticated && (
+        {/* Logout */}
+        {isAdminAuthenticated && (
           <div className="mt-auto pt-4">
-            <button 
+            <button
               onClick={onLogout}
               className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-rose-600 bg-rose-50 border border-rose-100 font-black text-xs uppercase tracking-widest hover:bg-rose-100 transition-all active:scale-95"
             >
