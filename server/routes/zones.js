@@ -3,10 +3,20 @@ import Zone from '../models/Zone.js';
 
 const router = express.Router();
 
-/* -------- GET all zones -------- */
+/* -------- GET all zones (exclude deleted) -------- */
 router.get('/', async (req, res) => {
   try {
-    const zones = await Zone.find();
+    const zones = await Zone.find({ isDeleted: false });
+    res.json(zones);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* -------- GET deleted zones (optional, admin use) -------- */
+router.get('/deleted', async (req, res) => {
+  try {
+    const zones = await Zone.find({ isDeleted: true });
     res.json(zones);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -43,16 +53,39 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-/* -------- DELETE zone -------- */
+/* -------- SOFT DELETE zone -------- */
 router.delete('/:id', async (req, res) => {
   try {
-    const deletedZone = await Zone.findByIdAndDelete(req.params.id);
+    const zone = await Zone.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: true },
+      { new: true }
+    );
 
-    if (!deletedZone) {
+    if (!zone) {
       return res.status(404).json({ message: 'Zone not found' });
     }
 
-    res.json({ message: 'Zone deleted successfully' });
+    res.json({ message: 'Zone deleted', zone });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* -------- RESTORE zone (THIS FIXES 404) -------- */
+router.post('/:id/restore', async (req, res) => {
+  try {
+    const zone = await Zone.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: false },
+      { new: true }
+    );
+
+    if (!zone) {
+      return res.status(404).json({ message: 'Zone not found' });
+    }
+
+    res.json(zone);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
