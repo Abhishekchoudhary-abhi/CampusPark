@@ -8,6 +8,10 @@ import slotRoutes from './routes/slots.js';
 import zoneRoutes from './routes/zones.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
+import ownerRoutes from './routes/owner.js';
+
+
+
 
 dotenv.config();
 
@@ -20,6 +24,7 @@ mongoose.set('autoIndex', false);
 /* ==================== MIDDLEWARE ==================== */
 
 // ✅ CORS (must come BEFORE routes)
+
 app.use(
   cors({
     origin: [
@@ -56,6 +61,7 @@ mongoose
 // 🔐 Auth & Admin
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/owner', ownerRoutes);
 
 // 🚗 Core app routes
 app.use('/api/slots', slotRoutes);
