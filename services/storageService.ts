@@ -1,14 +1,8 @@
 import { ParkingSlot, ParkingZone } from '../types';
 
-// ✅ Vite environment variable (works in web + Android app)
+// ✅ Vite environment variable
 const API_BASE = import.meta.env.VITE_API_BASE;
-console.log('API BASE:', import.meta.env.VITE_API_BASE);
 
-
-/* 
-  Safety check (optional during development)
-  Remove this console.log after verifying once
-*/
 if (!API_BASE) {
   console.error('❌ VITE_API_BASE is not defined');
 }
@@ -21,7 +15,14 @@ export const storageService = {
     try {
       const res = await fetch(`${API_BASE}/api/slots`);
       if (!res.ok) throw new Error('Failed to load slots');
-      return await res.json();
+
+      const data = await res.json();
+
+      // 🔴 Normalize MongoDB _id → id
+      return data.map((slot: any) => ({
+        ...slot,
+        id: slot._id,
+      }));
     } catch (error) {
       console.error('Error loading slots:', error);
       return [];
@@ -38,7 +39,13 @@ export const storageService = {
       });
 
       if (!res.ok) throw new Error('Failed to add slot');
-      return await res.json();
+
+      const data = await res.json();
+
+      return {
+        ...data,
+        id: data._id,
+      };
     } catch (error) {
       console.error('Error adding slot:', error);
     }
@@ -49,6 +56,11 @@ export const storageService = {
     id: string,
     data: Partial<ParkingSlot>
   ): Promise<ParkingSlot | undefined> => {
+    if (!id) {
+      console.error('❌ updateSlot called with invalid id:', id);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/slots/${id}`, {
         method: 'PUT',
@@ -57,7 +69,13 @@ export const storageService = {
       });
 
       if (!res.ok) throw new Error('Failed to update slot');
-      return await res.json();
+
+      const updated = await res.json();
+
+      return {
+        ...updated,
+        id: updated._id,
+      };
     } catch (error) {
       console.error('Error updating slot:', error);
     }
@@ -65,6 +83,11 @@ export const storageService = {
 
   // Delete slot
   deleteSlot: async (id: string): Promise<boolean> => {
+    if (!id) {
+      console.error('❌ deleteSlot called with invalid id:', id);
+      return false;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/slots/${id}`, {
         method: 'DELETE',
@@ -84,7 +107,14 @@ export const storageService = {
     try {
       const res = await fetch(`${API_BASE}/api/zones`);
       if (!res.ok) throw new Error('Failed to load zones');
-      return await res.json();
+
+      const data = await res.json();
+
+      // 🔴 Normalize MongoDB _id → id
+      return data.map((zone: any) => ({
+        ...zone,
+        id: zone._id,
+      }));
     } catch (error) {
       console.error('Error loading zones:', error);
       return [];
@@ -101,7 +131,13 @@ export const storageService = {
       });
 
       if (!res.ok) throw new Error('Failed to add zone');
-      return await res.json();
+
+      const data = await res.json();
+
+      return {
+        ...data,
+        id: data._id,
+      };
     } catch (error) {
       console.error('Error adding zone:', error);
     }
