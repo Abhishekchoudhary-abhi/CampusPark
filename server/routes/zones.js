@@ -3,10 +3,7 @@ import Zone from '../models/Zone.js';
 
 const router = express.Router();
 
-/* ===== TEST ROUTE (TEMPORARY – DO NOT REMOVE YET) ===== */
-router.post('/__alive', (req, res) => {
-  res.json({ zonesRouter: 'alive' });
-});
+
 
 /* -------- GET all zones (exclude deleted) -------- */
 router.get('/', async (req, res) => {
