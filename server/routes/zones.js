@@ -3,6 +3,11 @@ import Zone from '../models/Zone.js';
 
 const router = express.Router();
 
+/* ===== TEST ROUTE (TEMPORARY – DO NOT REMOVE YET) ===== */
+router.post('/__alive', (req, res) => {
+  res.json({ zonesRouter: 'alive' });
+});
+
 /* -------- GET all zones (exclude deleted) -------- */
 router.get('/', async (req, res) => {
   try {
@@ -72,7 +77,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-/* -------- RESTORE zone (THIS FIXES 404) -------- */
+/* -------- RESTORE zone -------- */
 router.post('/:id/restore', async (req, res) => {
   try {
     const zone = await Zone.findByIdAndUpdate(
