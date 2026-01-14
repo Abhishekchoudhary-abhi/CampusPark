@@ -8,9 +8,6 @@ const router = express.Router();
 
 /* =====================================================
    CREATE USER (OWNER ONLY)
-   - OWNER can create ADMIN / TEACHER / STUDENT
-   - UNIVERSITY ID auto-generated
-   - Default password assigned
 ===================================================== */
 router.post(
   '/create-user',
@@ -20,27 +17,25 @@ router.post(
     try {
       const { name, email, role } = req.body;
 
-      // 🔒 Basic validation
       if (!name || !email || !role) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
 
-      if (!['OWNER', 'ADMIN', 'TEACHER', 'STUDENT'].includes(role)) {
-        return res.status(400).json({ message: 'Invalid role' });
+      // 🚫 OWNER cannot be created via API
+      if (!['ADMIN', 'TEACHER', 'STUDENT'].includes(role)) {
+        return res
+          .status(400)
+          .json({ message: 'Invalid role for creation' });
       }
 
-      // Prevent duplicate email
       const exists = await User.findOne({ email });
       if (exists) {
         return res.status(400).json({ message: 'Email already exists' });
       }
 
-      // Count existing users by role
       const count = await User.countDocuments({ role });
 
-      // Role-based prefix
       const prefixMap = {
-        OWNER: 'OWN',
         ADMIN: 'ADM',
         TEACHER: 'TEA',
         STUDENT: 'STD',
@@ -50,7 +45,6 @@ router.post(
         count + 1
       ).padStart(4, '0')}`;
 
-      // Default password (must be changed after login)
       const hashedPassword = await bcrypt.hash('Welcome@123', 10);
 
       const user = await User.create({
@@ -79,8 +73,63 @@ router.post(
 );
 
 /* =====================================================
-   GET USERS
-   - OWNER & ADMIN only
+   STEP 3 — LIST ADMINS (OWNER ONLY)
+===================================================== */
+router.get(
+  '/admins',
+  authenticate,
+  requireRole(['OWNER']),
+  async (req, res) => {
+    try {
+      const admins = await User.find({ role: 'ADMIN' })
+        .select('-password -otp -otpExpiry');
+
+      res.json(admins);
+    } catch (err) {
+      console.error('GET ADMINS ERROR:', err);
+      res.status(500).json({ message: 'Failed to fetch admins' });
+    }
+  }
+);
+
+/* =====================================================
+   STEP 4 — ACTIVATE / DEACTIVATE USER (OWNER ONLY)
+===================================================== */
+router.patch(
+  '/users/:id/status',
+  authenticate,
+  requireRole(['OWNER']),
+  async (req, res) => {
+    try {
+      const { isActive } = req.body;
+
+      const user = await User.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      user.isActive = Boolean(isActive);
+      await user.save();
+
+      res.json({
+        message: 'User status updated',
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+        },
+      });
+    } catch (err) {
+      console.error('UPDATE STATUS ERROR:', err);
+      res.status(500).json({ message: 'Failed to update status' });
+    }
+  }
+);
+
+/* =====================================================
+   GET ALL USERS (OWNER & ADMIN)
 ===================================================== */
 router.get(
   '/users',
