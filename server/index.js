@@ -13,6 +13,10 @@ dotenv.config();
 
 const app = express();
 
+/* ==================== MONGOOSE CONFIG ==================== */
+// 🔒 CRITICAL: prevent Mongoose from auto-recreating indexes
+mongoose.set('autoIndex', false);
+
 /* ==================== MIDDLEWARE ==================== */
 
 // ✅ CORS (must come BEFORE routes)
