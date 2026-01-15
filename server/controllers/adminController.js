@@ -25,7 +25,7 @@ export const createUserByOwner = async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      active: true, // ✅ keep your existing field
+      active: true, // keep existing field
     });
 
     res.status(201).json({ message: 'User created successfully' });
@@ -41,17 +41,18 @@ export const createUserByOwner = async (req, res) => {
  */
 export const getAdmins = async (req, res) => {
   try {
-    const admins = await User.find({ role: 'ADMIN' }).select(
-      '_id name email active'
-    );
+    // ✅ fetch only active admins
+    const admins = await User.find({
+      role: 'ADMIN',
+      active: true,
+    }).select('_id name email active');
 
-    // Normalize response for frontend
     res.json(
       admins.map(a => ({
         id: a._id,
         name: a.name,
         email: a.email,
-        enabled: a.active === undefined ? true : a.active,
+        enabled: a.active,
       }))
     );
   } catch (err) {
@@ -72,9 +73,21 @@ export const toggleAdminStatus = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    // 🔐 defensive default
-    admin.active = admin.active === undefined ? false : !admin.active;
+    // 🔒 prevent disabling last active admin
+    if (admin.active) {
+      const activeAdmins = await User.countDocuments({
+        role: 'ADMIN',
+        active: true,
+      });
 
+      if (activeAdmins <= 1) {
+        return res
+          .status(400)
+          .json({ message: 'At least one admin must remain active' });
+      }
+    }
+
+    admin.active = !admin.active;
     await admin.save();
 
     res.json({
