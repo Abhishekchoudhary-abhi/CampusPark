@@ -25,11 +25,12 @@ export const createUserByOwner = async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      active: true,
+      active: true, // ✅ keep your existing field
     });
 
     res.status(201).json({ message: 'User created successfully' });
   } catch (err) {
+    console.error('CREATE USER ERROR:', err);
     res.status(500).json({ message: 'User creation failed' });
   }
 };
@@ -44,15 +45,17 @@ export const getAdmins = async (req, res) => {
       '_id name email active'
     );
 
+    // Normalize response for frontend
     res.json(
       admins.map(a => ({
         id: a._id,
         name: a.name,
         email: a.email,
-        enabled: a.active ?? true,
+        enabled: a.active === undefined ? true : a.active,
       }))
     );
   } catch (err) {
+    console.error('GET ADMINS ERROR:', err);
     res.status(500).json({ message: 'Failed to load admins' });
   }
 };
@@ -69,7 +72,9 @@ export const toggleAdminStatus = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    admin.active = !admin.active;
+    // 🔐 defensive default
+    admin.active = admin.active === undefined ? false : !admin.active;
+
     await admin.save();
 
     res.json({
@@ -77,6 +82,7 @@ export const toggleAdminStatus = async (req, res) => {
       enabled: admin.active,
     });
   } catch (err) {
+    console.error('TOGGLE ADMIN ERROR:', err);
     res.status(500).json({ message: 'Failed to update admin' });
   }
 };

@@ -2,9 +2,10 @@ import jwt from 'jsonwebtoken';
 
 export const authenticate = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const authHeader =
+      req.headers.authorization || req.headers.Authorization;
 
-    // No Authorization header
+    // ❌ No Authorization header
     if (!authHeader) {
       return res.status(401).json({ message: 'No token provided' });
     }
@@ -21,11 +22,15 @@ export const authenticate = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Attach decoded payload to request
-    // expected: { id, role, iat, exp }
-    req.user = decoded;
+    // expected payload: { id, role, iat, exp }
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+    };
 
     next();
   } catch (err) {
+    // token expired / invalid
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };

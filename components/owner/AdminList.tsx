@@ -9,12 +9,13 @@ interface Admin {
 }
 
 const AdminList: React.FC = () => {
-  const { token, loading: authLoading } = useAuth(); // ✅ USE loading
+  const { token, loading: authLoading } = useAuth();
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
 
   const API = import.meta.env.VITE_API_BASE;
 
+  // 🔹 Load admins (unchanged)
   const loadAdmins = async () => {
     if (!token) return;
 
@@ -34,7 +35,6 @@ const AdminList: React.FC = () => {
       }
 
       const data = await res.json();
-
       if (!Array.isArray(data)) {
         setAdmins([]);
         return;
@@ -49,9 +49,36 @@ const AdminList: React.FC = () => {
     }
   };
 
+  // ✅ FIX: define toggleAdmin (this was missing)
+  const toggleAdmin = async (adminId: string) => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API}/api/owner/admins/${adminId}`, {
+
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.message || 'Action not allowed');
+        return;
+      }
+
+      // refresh admin list after toggle
+      loadAdmins();
+    } catch (err) {
+      console.error('Failed to toggle admin', err);
+    }
+  };
+
   useEffect(() => {
-    if (authLoading) return; // ⛔ wait for auth restore
-    if (!token) return;      // ⛔ not logged in
+    if (authLoading) return;
+    if (!token) return;
     loadAdmins();
   }, [token, authLoading]);
 
