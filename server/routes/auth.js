@@ -8,7 +8,7 @@ const router = express.Router();
 
 /* =====================================================
    USER SELF-REGISTRATION (PUBLIC)
-   ROLE IS FORCED TO STUDENT
+   ROLE IS FORCED TO TEACHER
 ===================================================== */
 router.post('/register', async (req, res) => {
   try {
@@ -25,14 +25,30 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await User.create({
+    const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: 'STUDENT', // 🔒 FORCED
+      role: 'TEACHER', // ✅ SAFE DEFAULT ROLE
+      isActive: true,
     });
 
-    res.status(201).json({ message: 'Account created successfully' });
+    // Auto-login after register (optional but recommended)
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '30m' }
+    );
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
     console.error('REGISTER ERROR:', err);
     res.status(500).json({ message: 'Registration failed' });
@@ -62,10 +78,6 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    if (!process.env.JWT_SECRET) {
-      throw new Error('JWT_SECRET not set');
     }
 
     const token = jwt.sign(
@@ -201,7 +213,7 @@ router.post('/reset-password', async (req, res) => {
 });
 
 /* =====================================================
-   CREATE ADMIN / TEACHER (OWNER ONLY)
+   CREATE ADMIN / TEACHER (OWNER ONLY) — UNCHANGED
 ===================================================== */
 router.post('/create-user', authenticate, async (req, res) => {
   try {
@@ -227,6 +239,7 @@ router.post('/create-user', authenticate, async (req, res) => {
       email,
       password: hashedPassword,
       role,
+      isActive: true,
     });
 
     res.status(201).json({ message: 'User created successfully' });

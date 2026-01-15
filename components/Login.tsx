@@ -16,10 +16,15 @@ interface LoginProps {
 
 const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
   const { login } = useAuth();
+  const API = import.meta.env.VITE_API_BASE;
 
+  const [isRegister, setIsRegister] = useState(false);
+
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,8 +34,25 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
     setIsLoading(true);
 
     try {
-      await login(email, password); // 🔐 AUTH FOR BOTH USER & ADMIN
-      // App.tsx will auto-route based on role
+      // 🔐 REGISTER FLOW
+      if (isRegister) {
+        const res = await fetch(`${API}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.message || 'Registration failed');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 🔐 LOGIN (for both register & login)
+      await login(email, password);
+      // App.tsx auto-routes by role
     } catch (err: any) {
       setError(
         err?.message || 'Invalid credentials. Please try again.'
@@ -54,7 +76,7 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
               <ShieldCheck className="text-white" size={32} />
             </div>
             <h2 className="text-2xl font-black text-white tracking-tight">
-              Sign in to CampusPark
+              {isRegister ? 'Create Account' : 'Sign in to CampusPark'}
             </h2>
             <p className="text-indigo-100 text-xs font-medium mt-1 uppercase tracking-widest">
               Access based on your role
@@ -65,13 +87,35 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
         {/* FORM */}
         <form onSubmit={handleSubmit} className="p-10 space-y-6">
           {error && (
-            <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 text-rose-600 text-xs font-bold animate-in slide-in-from-top-2">
+            <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 text-rose-600 text-xs font-bold">
               <AlertCircle size={18} />
               {error}
             </div>
           )}
 
           <div className="space-y-4">
+            {/* NAME (REGISTER ONLY) */}
+            {isRegister && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Name
+                </label>
+                <div className="relative">
+                  <User
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
+                    size={18}
+                  />
+                  <input
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Your full name"
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
             {/* EMAIL */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
@@ -86,8 +130,8 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="you@university.edu"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-800"
+                  placeholder="you@campus.com"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold"
                   required
                 />
               </div>
@@ -108,13 +152,13 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-800"
+                  className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-1"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -123,38 +167,34 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
           </div>
 
           {/* ACTIONS */}
-          <div className="pt-2 space-y-3">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  SIGN IN <ArrowRight size={16} />
-                </>
-              )}
-            </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm tracking-widest flex items-center justify-center gap-2"
+          >
+            {isLoading ? 'PLEASE WAIT...' : isRegister ? 'CREATE ACCOUNT' : 'SIGN IN'}
+            <ArrowRight size={16} />
+          </button>
 
-            {onCancel && (
-              <button
-                type="button"
-                onClick={onCancel}
-                className="w-full bg-transparent text-slate-400 py-2 rounded-2xl font-bold text-[10px] tracking-widest hover:text-slate-600 transition-colors uppercase"
-              >
-                Back
-              </button>
-            )}
-          </div>
-        </form>
-
-        <div className="px-10 pb-8 text-center">
-          <p className="text-[9px] text-slate-300 font-bold leading-relaxed">
-            Your role determines the dashboard after login.
+          <p
+            onClick={() => setIsRegister(p => !p)}
+            className="text-xs text-center text-indigo-600 cursor-pointer font-bold"
+          >
+            {isRegister
+              ? 'Already have an account? Login'
+              : 'New user? Create account'}
           </p>
-        </div>
+
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full text-slate-400 text-xs font-bold uppercase"
+            >
+              Back
+            </button>
+          )}
+        </form>
       </div>
     </div>
   );

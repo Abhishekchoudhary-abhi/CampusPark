@@ -3,8 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 /**
- * USER SELF-REGISTRATION
- * ROLE IS FORCED TO STUDENT
+ * USER SELF-REGISTRATION (PUBLIC)
+ * ROLE IS FORCED TO TEACHER
+ * Does NOT affect OWNER / ADMIN creation
  */
 export const register = async (req, res) => {
   try {
@@ -21,14 +22,30 @@ export const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await User.create({
+    const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: 'STUDENT', // 🔒 FORCE ROLE
+      role: 'TEACHER', // ✅ SAFE DEFAULT ROLE
+      isActive: true,
     });
 
-    res.status(201).json({ message: 'Account created successfully' });
+    // Optional: auto-login after register
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: 'Registration failed' });
   }
@@ -36,6 +53,7 @@ export const register = async (req, res) => {
 
 /**
  * LOGIN (ALL ROLES)
+ * OWNER / ADMIN / TEACHER
  */
 export const login = async (req, res) => {
   try {
