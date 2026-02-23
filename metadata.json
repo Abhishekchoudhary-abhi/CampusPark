@@ -1,0 +1,8 @@
+
+{
+  "name": "CampusPark - Parking Assistance System",
+  "description": "A robust parking availability and notification system for college campuses, helping teachers and staff find parking spaces in real-time through a secure digital dashboard.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
