@@ -32,7 +32,7 @@ app.use(
       "http://localhost:3001",
       "http://localhost:5173",
       "https://campuspark-6xghjbqfi-abhishek-choudharys-projects-2b164f47.vercel.app"
-      'https://campus-backend-4t1u.onrender.com'
+    
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
