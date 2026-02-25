@@ -53,9 +53,17 @@ const AdminList: React.FC = () => {
     }
   };
 
-  // Toggle admin status
+  // Toggle admin status (with optimistic update - NO loading state)
   const toggleAdmin = async (adminId: string) => {
     if (!token) return;
+
+    // 🚀 Optimistic Update: Update UI immediately
+    const previousAdmins = admins;
+    const updatedAdmins = admins.map(a =>
+      a.id === adminId ? { ...a, enabled: !a.enabled } : a
+    );
+    setAdmins(updatedAdmins);
+    setError(null);
 
     try {
       const res = await fetch(`${API}/api/owner/admins/${adminId}`, {
@@ -67,23 +75,32 @@ const AdminList: React.FC = () => {
       });
 
       if (!res.ok) {
+        // ❌ Revert optimistic update on error
+        setAdmins(previousAdmins);
         const err = await res.json();
         setError(err.message || 'Action not allowed');
         setTimeout(() => setError(null), 3000);
         return;
       }
-
-      loadAdmins();
     } catch (err) {
+      // ❌ Revert optimistic update on error
+      setAdmins(previousAdmins);
       console.error('Failed to toggle admin', err);
       setError('Failed to toggle admin status');
       setTimeout(() => setError(null), 3000);
     }
   };
 
-  // Delete admin
+  // Delete admin (with optimistic update - NO loading state)
   const deleteAdminFunc = async (adminId: string) => {
     if (!token) return;
+
+    // 🚀 Optimistic Update: Remove from UI immediately
+    const previousAdmins = admins;
+    const updatedAdmins = admins.filter(a => a.id !== adminId);
+    setAdmins(updatedAdmins);
+    setDeleteConfirm(null);
+    setError(null);
 
     try {
       const res = await fetch(`${API}/api/owner/admins/${adminId}`, {
@@ -95,15 +112,16 @@ const AdminList: React.FC = () => {
       });
 
       if (!res.ok) {
+        // ❌ Revert optimistic update on error
+        setAdmins(previousAdmins);
         const err = await res.json();
         setError(err.message || 'Failed to delete admin');
         setTimeout(() => setError(null), 3000);
         return;
       }
-
-      setDeleteConfirm(null);
-      loadAdmins();
     } catch (err) {
+      // ❌ Revert optimistic update on error
+      setAdmins(previousAdmins);
       console.error('Failed to delete admin', err);
       setError('Failed to delete admin');
       setTimeout(() => setError(null), 3000);

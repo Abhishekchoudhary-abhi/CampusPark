@@ -18,30 +18,35 @@ const AddAdminModal = ({ onClose }: { onClose: () => void }) => {
 
     setLoading(true);
 
-    const res = await fetch(`${API}/api/owner/users`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-        role: 'ADMIN',
-      }),
-    });
+    try {
+      const res = await fetch(`${API}/api/owner/users`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role: 'ADMIN',
+        }),
+      });
 
-    setLoading(false);
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.message || 'Failed to create admin');
+        setLoading(false);
+        return;
+      }
 
-    if (!res.ok) {
-      const err = await res.json();
-      alert(err.message || 'Failed to create admin');
-      return;
+      // ✅ Smooth close with parent refresh (no page reload)
+      onClose();
+    } catch (error) {
+      console.error('Failed to create admin:', error);
+      alert('Failed to create admin');
+      setLoading(false);
     }
-
-    onClose();
-    window.location.reload(); // simple refresh (safe for now)
   };
 
   return (
