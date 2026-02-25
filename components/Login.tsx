@@ -15,6 +15,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { storageService } from '../services/storageService';
 
 interface LoginProps {
   onCancel?: () => void;
@@ -22,7 +23,6 @@ interface LoginProps {
 
 const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
   const { login } = useAuth();
-  const API = import.meta.env.VITE_API_BASE;
 
   const [isRegister, setIsRegister] = useState(false);
 
@@ -42,18 +42,7 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
     try {
       // 🔐 REGISTER FLOW
       if (isRegister) {
-        const res = await fetch(`${API}/api/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.message || 'Registration failed');
-          setIsLoading(false);
-          return;
-        }
+        await storageService.register(name, email, password);
       }
 
       // 🔐 LOGIN (for both register & login)

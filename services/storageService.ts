@@ -1,11 +1,27 @@
 import { ParkingSlot, ParkingZone } from '../types';
 
 /* ==================== CONFIG ==================== */
-const API_BASE = import.meta.env.VITE_API_BASE;
-
-if (!API_BASE) {
-  console.error('❌ VITE_API_BASE is not defined');
-}
+const API_BASE = (() => {
+  const apiUrl = import.meta.env.VITE_API_BASE?.replace(/\/$/, ''); // Remove trailing slash
+  
+  if (!apiUrl) {
+    const errorMsg = `❌ CRITICAL: VITE_API_BASE environment variable is undefined in ${import.meta.env.MODE} mode. Expected Render backend URL like https://myapp-backend.onrender.com`;
+    console.error(errorMsg);
+    console.debug('Available env vars:', import.meta.env);
+    
+    // In development, use localhost fallback
+    if (import.meta.env.DEV) {
+      console.warn('⚠️  Using development fallback: http://localhost:5000');
+      return 'http://localhost:5000';
+    }
+    
+    // In production, throw to prevent silent failures
+    throw new Error(errorMsg);
+  }
+  
+  console.log('✅ API Base URL configured:', apiUrl);
+  return apiUrl;
+})();
 
 /* ==================== TYPES ==================== */
 export type UserRole = 'OWNER' | 'ADMIN' | 'TEACHER' | 'STUDENT';
@@ -196,6 +212,20 @@ export const storageService = {
 
     if (!res.ok) throw new Error('Invalid credentials');
     return res.json(); // { token, user }
+  },
+
+  register: async (name: string, email: string, password: string) => {
+    const res = await fetch(`${API_BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || 'Registration failed');
+    }
+    return res.json();
   },
 
   changePassword: async (
