@@ -5,17 +5,16 @@ const API_BASE = (() => {
   const apiUrl = import.meta.env.VITE_API_BASE?.replace(/\/$/, ''); // Remove trailing slash
   
   if (!apiUrl) {
-    const errorMsg = `❌ CRITICAL: VITE_API_BASE environment variable is undefined in ${import.meta.env.MODE} mode. Expected Render backend URL like https://myapp-backend.onrender.com`;
-    console.error(errorMsg);
-    console.debug('Available env vars:', import.meta.env);
-    
-    // In development, use localhost fallback
+    // In development, use localhost fallback (when .env.local is not set)
     if (import.meta.env.DEV) {
-      console.warn('⚠️  Using development fallback: http://localhost:5000');
+      console.warn('⚠️  VITE_API_BASE not set. Using development fallback: http://localhost:5000');
+      console.warn('💡 For local development, create .env.local with: VITE_API_BASE=http://localhost:5000');
       return 'http://localhost:5000';
     }
     
     // In production, throw to prevent silent failures
+    const errorMsg = `❌ CRITICAL: VITE_API_BASE environment variable is undefined in production. Must be set to the Render backend URL like https://campus-backend-4t1u.onrender.com`;
+    console.error(errorMsg);
     throw new Error(errorMsg);
   }
   
