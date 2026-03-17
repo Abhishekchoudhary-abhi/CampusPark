@@ -2,18 +2,24 @@ import { ParkingSlot, ParkingZone } from '../types';
 import { apiClient } from './apiClient';
 
 /* ==================== CONFIG ==================== */
-const API_BASE = (() => {
-  const apiUrl = import.meta.env.VITE_API_BASE?.replace(/\/$/, '');
+export const API_BASE = (() => {
+  const envUrl = import.meta.env.VITE_API_BASE;
+  const apiUrl = envUrl?.replace(/\/$/, '');
   
-  if (!apiUrl) {
-    if (import.meta.env.DEV) {
-      return 'http://localhost:5000';
-    }
-    const errorMsg = `❌ CRITICAL: VITE_API_BASE environment variable is undefined in production.`;
-    console.error(errorMsg);
-    throw new Error(errorMsg);
+  if (apiUrl) {
+    console.log('🌐 API Client: Using environment VITE_API_BASE:', apiUrl);
+    return apiUrl;
   }
-  return apiUrl;
+
+  // Fallback for development
+  if (import.meta.env.DEV) {
+    console.warn('⚠️  API Client: VITE_API_BASE not set. Using dev fallback: http://localhost:5000');
+    return 'http://localhost:5000';
+  }
+  
+  const errorMsg = `❌ CRITICAL: VITE_API_BASE environment variable is undefined.`;
+  console.error(errorMsg);
+  return ''; // Return empty string instead of throwing to avoid crashing the whole bundle immediately
 })();
 
 /* ==================== TYPES ==================== */

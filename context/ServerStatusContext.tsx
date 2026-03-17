@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { apiClient } from '../services/apiClient';
+import { API_BASE } from '../services/storageService';
 
 interface ServerStatus {
   isWakingUp: boolean;
@@ -34,22 +35,29 @@ export const ServerStatusProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, []);
 
   const pingServer = useCallback(async () => {
-    const API_BASE = import.meta.env.VITE_API_BASE;
+    if (!API_BASE) {
+      console.error('❌ pingServer: API_BASE is empty. Cannot wake backend.');
+      return false;
+    }
+
+    console.log(`📡 pingServer: Starting wake-up ping to ${API_BASE}/api/slots`);
     try {
-      // Use the root or a dedicated health endpoint
       await apiClient.get(`${API_BASE}/api/slots`, {
         retries: 5,
         onRetry: (count) => {
+          console.log(`♻️  pingServer retry ${count}...`);
           setStatus(prev => ({ ...prev, isWakingUp: true, retryCount: count }));
         }
       });
+      console.log('✅ pingServer: Backend is available.');
       setStatus({ isWakingUp: false, isAvailable: true, error: null, retryCount: 0 });
       return true;
     } catch (err: any) {
+      console.error('❌ pingServer failed after all retries:', err.message);
       setStatus({ 
         isWakingUp: false, 
         isAvailable: false, 
-        error: "Server is taking longer than expected to respond.",
+        error: "Server connection failed. Is the backend URL correct?",
         retryCount: 0 
       });
       return false;

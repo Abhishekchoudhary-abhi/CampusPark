@@ -50,6 +50,8 @@ class ApiClient {
       const id = setTimeout(() => controller.abort(), timeout);
 
       try {
+        if (attempt > 0) console.log(`🔄 [API] Retrying ${url} (Attempt ${attempt}/${retries})...`);
+        
         const response = await fetch(url, {
           ...fetchOptions,
           signal: controller.signal,
@@ -58,7 +60,10 @@ class ApiClient {
         clearTimeout(id);
 
         if (!response.ok) {
-          if ([502, 503, 504].includes(response.status) && attempt < retries) {
+          // Retry on common gateway/cold-start/server-error status codes
+          const retryableStatuses = [500, 501, 502, 503, 504];
+          if (retryableStatuses.includes(response.status) && attempt < retries) {
+            console.warn(`⚠️ [API] Server busy/starting (${response.status}). Retrying...`);
             throw new ApiError('Server is waking up...', response.status, response.statusText);
           }
           
@@ -84,15 +89,15 @@ class ApiClient {
 
         const isTimeout = err.name === 'AbortError';
         const isNetworkError = err.name === 'TypeError';
-        const isServerWaking = err instanceof ApiError && [502, 503, 504].includes(err.status || 0);
+        const isServerWaking = err instanceof ApiError && [500, 501, 502, 503, 504].includes(err.status || 0);
 
         if ((isTimeout || isNetworkError || isServerWaking) && attempt < retries) {
           const delay = INITIAL_DELAY * Math.pow(2, attempt);
           
+          console.warn(`🚨 [API] Network/Server Error: ${err.message}. Retrying in ${delay}ms...`);
+          
           if (onRetry) {
             onRetry(attempt + 1, delay);
-          } else {
-            console.warn(`[API] Attempt ${attempt + 1} failed. Retrying in ${delay}ms...`, err.message);
           }
 
           await wait(delay);
