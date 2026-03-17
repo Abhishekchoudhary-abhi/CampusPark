@@ -3,23 +3,24 @@ import { apiClient } from './apiClient';
 
 /* ==================== CONFIG ==================== */
 export const API_BASE = (() => {
-  const envUrl = import.meta.env.VITE_API_BASE;
+  // Use VITE_ prefix so Vite loads these into import.meta.env
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE;
   const apiUrl = envUrl?.replace(/\/$/, '');
   
   if (apiUrl) {
-    console.log('🌐 API Client: Using environment VITE_API_BASE:', apiUrl);
+    console.log('🌐 API Client: Using backend URL:', apiUrl);
     return apiUrl;
   }
 
   // Fallback for development
   if (import.meta.env.DEV) {
-    console.warn('⚠️  API Client: VITE_API_BASE not set. Using dev fallback: http://localhost:5000');
+    console.warn('⚠️  API Client: VITE_API_URL not set. Using dev fallback: http://localhost:5000');
     return 'http://localhost:5000';
   }
   
-  const errorMsg = `❌ CRITICAL: VITE_API_BASE environment variable is undefined.`;
+  const errorMsg = `❌ CRITICAL: VITE_API_URL environment variable is undefined.`;
   console.error(errorMsg);
-  return ''; // Return empty string instead of throwing to avoid crashing the whole bundle immediately
+  return '';
 })();
 
 /* ==================== TYPES ==================== */
