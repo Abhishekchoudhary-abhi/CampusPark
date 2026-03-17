@@ -14,26 +14,22 @@ import Login from './components/Login';
 
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import ColdStartLoader from './components/ColdStartLoader';
 
 import { storageService } from './services/storageService';
 import { useAuth } from './context/AuthContext';
+import { useServerStatus } from './context/ServerStatusContext';
 
 
 const App: React.FC = () => {
-  console.log('API BASE:', import.meta.env.VITE_API_BASE);
-
-  /* ==================== AUTH ==================== */
-  const { user, logout, loading } = useAuth();
+  /* ==================== AUTH & STATUS ==================== */
+  const { user, logout, loading: authLoading } = useAuth();
+  const { isWakingUp, retryCount, pingServer, setWakingUp } = useServerStatus();
+  
   const role = user?.role;
-
-  console.log('USER FROM AUTH:', user);
-  console.log('ROLE VALUE:', role);
-  console.log('ROLE TYPE:', typeof role);
-  console.log('EXPECTED OWNER:', UserRole.OWNER);
-
   const isLoggedIn = !!user;
 
-  /* ==================== STATE (ALL HOOKS FIRST) ==================== */
+  /* ==================== STATE ==================== */
   const [zones, setZones] = useState<ParkingZone[]>([]);
   const [slots, setSlots] = useState<ParkingSlot[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -42,20 +38,36 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   /* ==================== LOAD DATA ==================== */
-  const loadAllData = async () => {
-    const [z, s] = await Promise.all([
-      storageService.loadZones(),
-      storageService.loadSlots(),
-    ]);
-    setZones(z);
-    setSlots(s);
-  };
+  const loadAllData = useCallback(async () => {
+    try {
+      const [z, s] = await Promise.all([
+        storageService.loadZones(),
+        storageService.loadSlots((delay) => {
+          // If storageService hits a retry, it means we might be waking up
+          setWakingUp(true);
+        }),
+      ]);
+      setZones(z);
+      setSlots(s);
+      setWakingUp(false);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+      // setWakingUp(false) is handled inside storageService/apiClient mostly,
+      // but we ensure UI recovers here
+      setWakingUp(false);
+    }
+  }, [setWakingUp]);
+
+  // Initial wake-up ping
+  useEffect(() => {
+    pingServer();
+  }, [pingServer]);
 
   useEffect(() => {
     if (isLoggedIn) {
       loadAllData();
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, loadAllData]);
 
   /* ==================== LOGOUT ==================== */
   const handleLogout = () => {
@@ -99,7 +111,7 @@ const App: React.FC = () => {
 
       loadAllData();
     },
-    [slots, zones]
+    [slots, zones, loadAllData]
   );
 
   const addSlot = useCallback(async (zoneId: string, number: string) => {
@@ -111,12 +123,12 @@ const App: React.FC = () => {
       updatedAt: new Date().toISOString(),
     });
     loadAllData();
-  }, []);
+  }, [loadAllData]);
 
   const removeSlot = useCallback(async (slotId: string) => {
     await storageService.deleteSlot(slotId);
     loadAllData();
-  }, []);
+  }, [loadAllData]);
 
   /* ==================== ZONE ACTIONS ==================== */
   const addZone = useCallback(async (name: string, description: string) => {
@@ -127,14 +139,14 @@ const App: React.FC = () => {
       totalSlots: 0,
     });
     loadAllData();
-  }, []);
+  }, [loadAllData]);
 
   const updateZone = useCallback(
     async (zoneId: string, name: string, description: string) => {
       await storageService.updateZone(zoneId, { name, description });
       loadAllData();
     },
-    []
+    [loadAllData]
   );
 
   const removeZone = useCallback(async (zoneId: string) => {
@@ -157,12 +169,12 @@ const App: React.FC = () => {
     ]);
 
     loadAllData();
-  }, []);
+  }, [loadAllData]);
 
   const restoreZone = useCallback(async (zoneId: string) => {
     await storageService.restoreZone(zoneId);
     loadAllData();
-  }, []);
+  }, [loadAllData]);
 
   /* ==================== USER ==================== */
   const reserveSlot = useCallback(
@@ -177,10 +189,10 @@ const App: React.FC = () => {
   };
 
   /* ==================== BLOCK RENDER UNTIL AUTH READY ==================== */
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500">
-        Loading...
+        Loading Auth...
       </div>
     );
   }
@@ -188,6 +200,9 @@ const App: React.FC = () => {
   /* ==================== UI ==================== */
   return (
     <div className="min-h-screen flex bg-slate-50 text-slate-900 relative">
+      {/* Backend Cold Start Overlay */}
+      {isWakingUp && <ColdStartLoader retryCount={retryCount} />}
+
       {isLoggedIn && (
         <Sidebar
           role={role}

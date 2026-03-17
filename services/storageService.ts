@@ -1,24 +1,18 @@
 import { ParkingSlot, ParkingZone } from '../types';
+import { apiClient } from './apiClient';
 
 /* ==================== CONFIG ==================== */
 const API_BASE = (() => {
-  const apiUrl = import.meta.env.VITE_API_BASE?.replace(/\/$/, ''); // Remove trailing slash
+  const apiUrl = import.meta.env.VITE_API_BASE?.replace(/\/$/, '');
   
   if (!apiUrl) {
-    // In development, use localhost fallback (when .env.local is not set)
     if (import.meta.env.DEV) {
-      console.warn('⚠️  VITE_API_BASE not set. Using development fallback: http://localhost:5000');
-      console.warn('💡 For local development, create .env.local with: VITE_API_BASE=http://localhost:5000');
       return 'http://localhost:5000';
     }
-    
-    // In production, throw to prevent silent failures
-    const errorMsg = `❌ CRITICAL: VITE_API_BASE environment variable is undefined in production. Must be set to the Render backend URL like https://campus-backend-4t1u.onrender.com`;
+    const errorMsg = `❌ CRITICAL: VITE_API_BASE environment variable is undefined in production.`;
     console.error(errorMsg);
     throw new Error(errorMsg);
   }
-  
-  console.log('✅ API Base URL configured:', apiUrl);
   return apiUrl;
 })();
 
@@ -34,25 +28,15 @@ export interface AppUser {
   isActive: boolean;
 }
 
-/* ==================== HELPERS (SAFE ADDITION) ==================== */
-const authHeaders = (token?: string) =>
-  token
-    ? {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      }
-    : { 'Content-Type': 'application/json' };
-
 /* ==================== STORAGE SERVICE ==================== */
 export const storageService = {
   /* ==================== SLOTS ==================== */
 
-  loadSlots: async (): Promise<ParkingSlot[]> => {
+  loadSlots: async (onRetry?: (count: number) => void): Promise<ParkingSlot[]> => {
     try {
-      const res = await fetch(`${API_BASE}/api/slots`);
-      if (!res.ok) throw new Error('Failed to load slots');
-
-      const data = await res.json();
+      const data = await apiClient.get<any[]>(`${API_BASE}/api/slots`, {
+        onRetry: (_, delay) => onRetry?.(delay)
+      });
       return data.map((slot: any) => ({ ...slot, id: slot._id }));
     } catch (error) {
       console.error('Error loading slots:', error);
@@ -62,14 +46,7 @@ export const storageService = {
 
   addSlot: async (slot: ParkingSlot): Promise<ParkingSlot | undefined> => {
     try {
-      const res = await fetch(`${API_BASE}/api/slots`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(slot),
-      });
-
-      if (!res.ok) throw new Error('Failed to add slot');
-      const data = await res.json();
+      const data = await apiClient.post<any>(`${API_BASE}/api/slots`, slot);
       return { ...data, id: data._id };
     } catch (error) {
       console.error('Error adding slot:', error);
@@ -81,14 +58,7 @@ export const storageService = {
     data: Partial<ParkingSlot>
   ): Promise<ParkingSlot | undefined> => {
     try {
-      const res = await fetch(`${API_BASE}/api/slots/${id}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) throw new Error('Failed to update slot');
-      const updated = await res.json();
+      const updated = await apiClient.put<any>(`${API_BASE}/api/slots/${id}`, data);
       return { ...updated, id: updated._id };
     } catch (error) {
       console.error('Error updating slot:', error);
@@ -97,10 +67,8 @@ export const storageService = {
 
   deleteSlot: async (id: string): Promise<boolean> => {
     try {
-      const res = await fetch(`${API_BASE}/api/slots/${id}`, {
-        method: 'DELETE',
-      });
-      return res.ok;
+      await apiClient.delete(`${API_BASE}/api/slots/${id}`);
+      return true;
     } catch (error) {
       console.error('Error deleting slot:', error);
       return false;
@@ -111,10 +79,7 @@ export const storageService = {
 
   loadZones: async (): Promise<ParkingZone[]> => {
     try {
-      const res = await fetch(`${API_BASE}/api/zones`);
-      if (!res.ok) throw new Error('Failed to load zones');
-
-      const data = await res.json();
+      const data = await apiClient.get<any[]>(`${API_BASE}/api/zones`);
       return data.map((zone: any) => ({ ...zone, id: zone._id }));
     } catch (error) {
       console.error('Error loading zones:', error);
@@ -124,14 +89,7 @@ export const storageService = {
 
   addZone: async (zone: ParkingZone): Promise<ParkingZone | undefined> => {
     try {
-      const res = await fetch(`${API_BASE}/api/zones`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(zone),
-      });
-
-      if (!res.ok) throw new Error('Failed to add zone');
-      const data = await res.json();
+      const data = await apiClient.post<any>(`${API_BASE}/api/zones`, zone);
       return { ...data, id: data._id };
     } catch (error) {
       console.error('Error adding zone:', error);
@@ -143,14 +101,7 @@ export const storageService = {
     data: Partial<ParkingZone>
   ): Promise<ParkingZone | undefined> => {
     try {
-      const res = await fetch(`${API_BASE}/api/zones/${zoneId}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) throw new Error('Failed to update zone');
-      const updated = await res.json();
+      const updated = await apiClient.put<any>(`${API_BASE}/api/zones/${zoneId}`, data);
       return { ...updated, id: updated._id };
     } catch (error) {
       console.error('Error updating zone:', error);
@@ -159,10 +110,8 @@ export const storageService = {
 
   deleteZone: async (zoneId: string): Promise<boolean> => {
     try {
-      const res = await fetch(`${API_BASE}/api/zones/${zoneId}`, {
-        method: 'DELETE',
-      });
-      return res.ok;
+      await apiClient.delete(`${API_BASE}/api/zones/${zoneId}`);
+      return true;
     } catch (error) {
       console.error('Error deleting zone:', error);
       return false;
@@ -171,60 +120,22 @@ export const storageService = {
 
   restoreZone: async (zoneId: string): Promise<boolean> => {
     try {
-      const res = await fetch(
-        `${API_BASE}/api/zones/${zoneId}/restore`,
-        { method: 'POST' }
-      );
-      return res.ok;
+      await apiClient.post(`${API_BASE}/api/zones/${zoneId}/restore`);
+      return true;
     } catch (error) {
       console.error('Error restoring zone:', error);
       return false;
     }
   },
 
-  deleteZoneOptimistic: async (zoneId: string): Promise<void> => {
-    const res = await fetch(`${API_BASE}/api/zones/${zoneId}`, {
-      method: 'DELETE',
-    });
-    if (!res.ok) throw new Error('Failed to delete zone');
-  },
-
-  restoreZoneOptimistic: async (zoneId: string): Promise<ParkingZone> => {
-    const res = await fetch(
-      `${API_BASE}/api/zones/${zoneId}/restore`,
-      { method: 'POST' }
-    );
-    if (!res.ok) throw new Error('Failed to restore zone');
-
-    const data = await res.json();
-    return { ...data, id: data._id };
-  },
-
   /* ==================== AUTH ==================== */
 
   login: async (email: string, password: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) throw new Error('Invalid credentials');
-    return res.json(); // { token, user }
+    return apiClient.post<any>(`${API_BASE}/api/auth/login`, { email, password });
   },
 
   register: async (name: string, email: string, password: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/register`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Registration failed');
-    }
-    return res.json();
+    return apiClient.post<any>(`${API_BASE}/api/auth/register`, { name, email, password });
   },
 
   changePassword: async (
@@ -232,47 +143,22 @@ export const storageService = {
     oldPassword: string,
     newPassword: string
   ) => {
-    const res = await fetch(`${API_BASE}/api/auth/change-password`, {
-      method: 'PUT',
-      headers: authHeaders(token),
-      body: JSON.stringify({ oldPassword, newPassword }),
-    });
-
-    if (!res.ok) throw new Error('Password change failed');
-    return res.json();
+    return apiClient.put<any>(`${API_BASE}/api/auth/change-password`, 
+      { oldPassword, newPassword },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
   },
 
   sendOtp: async (email: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ email }),
-    });
-
-    if (!res.ok) throw new Error('Failed to send OTP');
-    return res.json();
+    return apiClient.post<any>(`${API_BASE}/api/auth/forgot-password`, { email });
   },
 
   verifyOtp: async (email: string, otp: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ email, otp }),
-    });
-
-    if (!res.ok) throw new Error('Invalid OTP');
-    return res.json();
+    return apiClient.post<any>(`${API_BASE}/api/auth/verify-otp`, { email, otp });
   },
 
   resetPassword: async (email: string, newPassword: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ email, newPassword }),
-    });
-
-    if (!res.ok) throw new Error('Reset failed');
-    return res.json();
+    return apiClient.post<any>(`${API_BASE}/api/auth/reset-password`, { email, newPassword });
   },
 
   /* ==================== ADMIN ==================== */
@@ -285,24 +171,19 @@ export const storageService = {
       role: UserRole;
     }
   ): Promise<AppUser> => {
-    const res = await fetch(`${API_BASE}/api/admin/create-user`, {
-      method: 'POST',
-      headers: authHeaders(token),
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) throw new Error('Failed to create user');
-    const data = await res.json();
+    const data = await apiClient.post<any>(
+      `${API_BASE}/api/admin/create-user`, 
+      payload,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
     return { ...data, id: data._id };
   },
 
   getUsers: async (token: string): Promise<AppUser[]> => {
-    const res = await fetch(`${API_BASE}/api/admin/users`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!res.ok) throw new Error('Failed to load users');
-    const data = await res.json();
+    const data = await apiClient.get<any[]>(
+      `${API_BASE}/api/admin/users`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
     return data.map((u: any) => ({ ...u, id: u._id }));
   },
 };
