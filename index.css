@@ -1,0 +1,42 @@
+@keyframes blob {
+  0% { transform: scale(1) translate(0, 0); opacity: 0.2; }
+  33% { transform: scale(1.1) translate(30px, -50px); opacity: 0.3; }
+  66% { transform: scale(0.9) translate(-20px, 40px); opacity: 0.25; }
+  100% { transform: scale(1) translate(0, 0); opacity: 0.2; }
+}
+
+@keyframes mesh {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-blob {
+  animation: blob 20s infinite ease-in-out;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.bg-mesh-light {
+  background: linear-gradient(-45deg, #f0f9ff, #e0f2fe, #f5f3ff, #ede9fe);
+  background-size: 400% 400%;
+  animation: mesh 12s ease infinite;
+}
+
+.glass-morphism-light {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+}
+
+.input-focused {
+  @apply ring-4 ring-indigo-500/10 border-indigo-500/30 bg-white;
+}

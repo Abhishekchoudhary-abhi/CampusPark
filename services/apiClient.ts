@@ -10,7 +10,7 @@
 
 const DEFAULT_RETRIES = 5;
 const INITIAL_DELAY = 1000; // 1 second
-const TIMEOUT = 15000; // 15 seconds per request
+const TIMEOUT = 60000; // 60 seconds to account for Render cold starts
 
 export interface RequestOptions extends RequestInit {
   timeout?: number;

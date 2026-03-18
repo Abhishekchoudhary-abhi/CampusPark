@@ -193,4 +193,18 @@ export const storageService = {
     );
     return data.map((u: any) => ({ ...u, id: u._id }));
   },
+
+  /* ==================== SUBSCRIPTIONS ==================== */
+  listeners: [] as ((slots: ParkingSlot[]) => void)[],
+  
+  subscribeToSlots: (callback: (slots: ParkingSlot[]) => void) => {
+    storageService.listeners.push(callback);
+    return () => {
+      storageService.listeners = storageService.listeners.filter(l => l !== callback);
+    };
+  },
+
+  notifyListeners: (slots: ParkingSlot[]) => {
+    storageService.listeners.forEach(l => l(slots));
+  },
 };

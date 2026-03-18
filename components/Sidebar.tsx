@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { UserRole } from '../types';
-import { MapPin, ShieldCheck, User, X, LogOut } from 'lucide-react';
+import { MapPin, ShieldCheck, User, X, LogOut, ChevronRight, LayoutDashboard, Sparkles } from 'lucide-react';
 
 interface SidebarProps {
   role: UserRole | undefined;
@@ -17,101 +18,107 @@ const Sidebar: React.FC<SidebarProps> = ({
   isAuthenticated,
   onLogout,
 }) => {
-  const isAdmin =
-    role === UserRole.ADMIN || role === UserRole.OWNER;
+  const isAdmin = role === UserRole.ADMIN || role === UserRole.OWNER;
 
   return (
     <>
-      {/* 🔥 Mobile Overlay */}
+      {/* MOBILE OVERLAY */}
       <div
         onClick={onClose}
-        className={`
-          fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden
-          transition-opacity duration-300
-          ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
-        `}
+        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[60] md:hidden transition-all duration-500 ${
+          isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+        }`}
       />
 
       <aside
-        className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200
-          flex flex-col h-screen
-          transform transition-transform duration-300 ease-in-out
-          md:relative md:translate-x-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
+        className={`fixed inset-y-0 left-0 z-[70] w-80 bg-white border-r border-slate-100 flex flex-col h-screen transform transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] md:sticky md:top-0 md:translate-x-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        }`}
       >
-        {/* Brand Section */}
-        <div className="p-5 border-b border-slate-50 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-100">
-              <MapPin className="text-white" size={18} strokeWidth={2.5} />
+        {/* BRAND SECTION */}
+        <div className="p-8 flex items-center justify-between">
+          <div className="flex items-center gap-4 group cursor-pointer">
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[1.25rem] flex items-center justify-center shadow-xl shadow-indigo-100 group-hover:rotate-6 transition-transform">
+              <MapPin className="text-white" size={24} strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
-              <h1 className="font-black text-xl text-slate-800 tracking-tight leading-none">
-                CampusPark
+              <h1 className="font-black text-2xl text-slate-800 tracking-tighter leading-none">
+                CampusPark<span className="text-indigo-600">.</span>
               </h1>
-              <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest mt-1 whitespace-nowrap">
-                Parking Assistance System
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 whitespace-nowrap">
+                Next-Gen Parking Control
               </span>
             </div>
           </div>
 
-          {/* Close button (mobile only) */}
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 md:hidden"
-          >
-            <X size={18} />
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 md:hidden bg-slate-50 rounded-xl">
+            <X size={20} />
           </button>
         </div>
 
-        {/* Portal Section */}
-        <div className="p-4 flex-grow flex flex-col gap-4">
-          <div className="bg-indigo-600 rounded-3xl p-5 shadow-xl shadow-indigo-100 space-y-4">
-            <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-2 px-1">
-              Access Portal
-            </p>
+        {/* NAVIGATION SECTIONS */}
+        <div className="flex-grow px-6 py-4 space-y-10 overflow-y-auto">
+          {/* MAIN ACCESS SECTION */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-between px-2">
+               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Management Portal</span>
+               <Sparkles size={12} className="text-indigo-400" />
+             </div>
+             
+             <div className="bg-slate-50/50 rounded-[2rem] p-2 border border-slate-100">
+                {/* Dashboard / User View */}
+                <button 
+                   className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-300 ${
+                     !isAdmin 
+                     ? 'bg-white text-indigo-600 shadow-lg shadow-indigo-50/50 translate-x-1' 
+                     : 'text-slate-500 hover:bg-white hover:text-indigo-500'
+                   }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <LayoutDashboard size={20} className={!isAdmin ? 'text-indigo-600' : 'text-slate-400'} />
+                    <span className="font-black text-sm uppercase tracking-widest">Dash Overview</span>
+                  </div>
+                  {!isAdmin && <ChevronRight size={16} />}
+                </button>
 
-            <div className="space-y-2">
-              {/* User Portal */}
-              <div
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold ${
-                  !isAdmin
-                    ? 'bg-white text-indigo-600 shadow-lg scale-[1.02]'
-                    : 'text-indigo-100 opacity-80'
-                }`}
-              >
-                <User size={18} />
-                User Portal
-              </div>
-
-              {/* Admin Portal */}
-              {isAdmin && (
-                <div className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-white text-indigo-600 shadow-lg scale-[1.02]">
-                  <ShieldCheck size={18} />
-                  Admin Portal
-                </div>
-              )}
-            </div>
+                {/* Admin Portal (Conditional) */}
+                {isAdmin && (
+                  <button 
+                    className="w-full mt-1 flex items-center justify-between px-5 py-4 rounded-2xl bg-white text-indigo-600 shadow-lg shadow-indigo-50/50 translate-x-1 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <ShieldCheck size={20} className="text-indigo-600" />
+                      <span className="font-black text-sm uppercase tracking-widest">Admin Control</span>
+                    </div>
+                    <ChevronRight size={16} />
+                  </button>
+                )}
+             </div>
           </div>
 
-          {/* Logout */}
-          {isAuthenticated && (
-            <div className="mt-auto pt-4">
-              <button
-                onClick={onLogout}
-                className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl
-                           text-rose-600 bg-rose-50 border border-rose-100
-                           font-black text-xs uppercase tracking-widest
-                           hover:bg-rose-100 transition-all active:scale-95"
-              >
-                <LogOut size={18} />
-                Sign Out
-              </button>
-            </div>
-          )}
+          {/* QUICK LINKS SECTION */}
+          <div className="space-y-4">
+             <span className="px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Preferences</span>
+             <div className="space-y-1">
+                <button className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-500 hover:bg-slate-50 transition-colors font-bold text-sm">
+                  <User size={18} /> Profile Settings
+                </button>
+             </div>
+          </div>
         </div>
+
+        {/* FOOTER SECTION / LOGOUT */}
+        {isAuthenticated && (
+          <div className="p-6 mt-auto border-t border-slate-50 bg-slate-50/20">
+            <button
+              onClick={onLogout}
+              className="group w-full flex items-center justify-center gap-4 px-6 py-5 rounded-[1.8rem] bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-300 active:scale-95 shadow-sm hover:shadow-xl hover:shadow-rose-100"
+            >
+              <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
+              <span className="font-black text-[10px] uppercase tracking-[0.2em]">Terminate Session</span>
+            </button>
+          </div>
+        )}
       </aside>
     </>
   );

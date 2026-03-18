@@ -7,12 +7,6 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  MapPin,
-  BarChart3,
-  Users,
-  Zap,
-  Calendar,
-  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { storageService } from '../services/storageService';
@@ -25,12 +19,10 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
   const { login } = useAuth();
 
   const [isRegister, setIsRegister] = useState(false);
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -40,253 +32,201 @@ const AdminLogin: React.FC<LoginProps> = ({ onCancel }) => {
     setIsLoading(true);
 
     try {
-      // 🔐 REGISTER FLOW
       if (isRegister) {
         await storageService.register(name, email, password);
       }
-
-      // 🔐 LOGIN (for both register & login)
       await login(email, password);
-      // App.tsx auto-routes by role
     } catch (err: any) {
-      setError(
-        err?.message || 'Invalid credentials. Please try again.'
-      );
+      setError(err?.message || 'Authentication unsuccessful. Please check credentials.');
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white flex items-center justify-center p-4 animate-in fade-in duration-500">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* LEFT SIDE - FEATURES & INFO */}
-        <div className="space-y-8 hidden lg:block animate-in slide-in-from-left duration-500">
-          <div>
-            <h1 className="text-5xl font-black text-slate-900 tracking-tight mb-2">
-              CampusPark
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#f9fafb] font-['Inter'] selection:bg-indigo-100 selection:text-indigo-600 px-4 py-8">
+      
+      {/* 🌤️ LIGHT EXTREME BACKGROUND (FROM STITCH + SYSTEM PRESETS) */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        {/* Animated Mesh Base */}
+        <div className="absolute inset-0 bg-mesh-light opacity-60"></div>
+        
+        {/* Floating Ethereal Blobs */}
+        <div className="absolute top-[-10%] left-[-5%] w-[40rem] h-[40rem] bg-indigo-100/30 rounded-full animate-blob filter blur-[100px]"></div>
+        <div className="absolute bottom-[-10%] right-[-5%] w-[45rem] h-[45rem] bg-blue-50/40 rounded-full animate-blob animation-delay-2000 filter blur-[120px]"></div>
+
+        {/* Minimalist Grid Pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'linear-gradient(#258cf4 1px, transparent 1px), linear-gradient(90deg, #258cf4 1px, transparent 1px)', backgroundSize: '60px 60px' }}
+        ></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in duration-700">
+        
+        {/* 💎 LOGIN CARD (INTEGRATED FROM STITCH DESIGN) */}
+        <div className="bg-white p-8 md:p-10 rounded-[8px] border border-gray-100 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.05),0_8px_10px_-6px_rgba(0,0,0,0.05)] backdrop-blur-sm bg-white/95 transition-all">
+          
+          {/* Header Section */}
+          <section className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-[#ebf4fe] rounded-[8px] mb-6 shadow-sm border border-[#258cf4]/10 transform hover:scale-110 transition-transform duration-500">
+              <ShieldCheck className="text-[#258cf4]" size={32} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+              {isRegister ? 'Join ParkFlow' : 'Welcome back'}
             </h1>
-            <p className="text-xl text-slate-600 font-bold">
-              Smart Parking Management System
+            <p className="text-gray-400 mt-2 text-sm font-medium">
+              {isRegister ? 'Enter your details to create an account' : 'Please enter your details to access your account'}
             </p>
-          </div>
+          </section>
 
-          {/* Feature Cards */}
-          <div className="space-y-4">
-            <div className="flex gap-4 items-start group">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
-                <MapPin className="text-blue-600" size={24} />
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-red-50 border border-red-100 p-4 rounded-[8px] flex items-center gap-3 text-red-600 text-xs font-bold animate-in shake duration-500">
+                <AlertCircle size={18} />
+                {error}
               </div>
-              <div>
-                <h3 className="font-black text-slate-900">Real-Time Availability</h3>
-                <p className="text-sm text-slate-600">
-                  See available parking spots across all zones instantly
-                </p>
-              </div>
-            </div>
+            )}
 
-            <div className="flex gap-4 items-start group">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-green-200 transition-colors">
-                <BarChart3 className="text-green-600" size={24} />
-              </div>
-              <div>
-                <h3 className="font-black text-slate-900">Advanced Analytics</h3>
-                <p className="text-sm text-slate-600">
-                  Track parking patterns and optimize campus parking
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 items-start group">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition-colors">
-                <Users className="text-purple-600" size={24} />
-              </div>
-              <div>
-                <h3 className="font-black text-slate-900">Role-Based Access</h3>
-                <p className="text-sm text-slate-600">
-                  Owner, Admin, Teacher, and Student roles with custom permissions
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 items-start group">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-orange-200 transition-colors">
-                <Zap className="text-orange-600" size={24} />
-              </div>
-              <div>
-                <h3 className="font-black text-slate-900">Instant Slot Booking</h3>
-                <p className="text-sm text-slate-600">
-                  Reserve parking spots with one click on your mobile device
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Section */}
-          <div className="grid grid-cols-2 gap-3 pt-6 border-t border-slate-200">
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar size={18} className="text-indigo-600" />
-                <span className="text-xs font-bold text-slate-600 uppercase">Active Users</span>
-              </div>
-              <p className="text-2xl font-black text-indigo-900">2,500+</p>
-            </div>
-            <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp size={18} className="text-emerald-600" />
-                <span className="text-xs font-bold text-slate-600 uppercase">Success Rate</span>
-              </div>
-              <p className="text-2xl font-black text-emerald-900">99.8%</p>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT SIDE - FORM */}
-        <div className="animate-in slide-in-from-right duration-500">
-          <div className="bg-white rounded-3xl shadow-2xl shadow-indigo-200 border border-slate-100 overflow-hidden backdrop-blur-sm bg-white/95">
-            {/* HEADER */}
-            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-8 text-center relative overflow-hidden">
-              <div className="absolute inset-0 opacity-10 pointer-events-none">
-                <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full border-8 border-white"></div>
-                <div className="absolute left-10 bottom-0 w-16 h-16 rounded-full border-4 border-white"></div>
-              </div>
-
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-lg">
-                  <ShieldCheck className="text-white" size={32} />
-                </div>
-                <h2 className="text-3xl font-black text-white tracking-tight">
-                  {isRegister ? 'Create Account' : 'Welcome Back'}
-                </h2>
-                <p className="text-blue-100 text-xs font-bold mt-2 uppercase tracking-widest">
-                  {isRegister ? 'Join our campus parking system' : 'Access your parking hub'}
-                </p>
-              </div>
-            </div>
-
-            {/* FORM */}
-            <form onSubmit={handleSubmit} className="p-10 space-y-6">
-              {error && (
-                <div className="bg-red-50 border-2 border-red-200 p-4 rounded-2xl flex items-center gap-3 text-red-700 text-xs font-bold animate-in shake">
-                  <AlertCircle size={20} />
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {/* NAME (REGISTER ONLY) */}
-                {isRegister && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                      Full Name
-                    </label>
-                    <div className="relative">
-                      <User
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        size={18}
-                      />
-                      <input
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="Your full name"
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                        required
-                      />
-                    </div>
+            {/* Name Input (Register Only) */}
+            {isRegister && (
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-gray-700 ml-0.5" htmlFor="name">Full Identity</label>
+                <div className="relative group transition-all duration-300">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400 group-focus-within:text-[#258cf4] transition-colors" />
                   </div>
+                  <input
+                    id="name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="e.g. John Doe"
+                    className="block w-full pl-11 pr-3 py-3 border border-gray-200 rounded-[8px] text-gray-900 font-medium placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#258cf4] focus:border-[#258cf4] sm:text-sm bg-gray-50/30 focus:bg-white transition duration-200"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Email Input */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-gray-700 ml-0.5" htmlFor="email">Email Address</label>
+              <div className="relative group transition-all duration-300">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-[#258cf4] transition-colors" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="block w-full pl-11 pr-3 py-3 border border-gray-200 rounded-[8px] text-gray-900 font-medium placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#258cf4] focus:border-[#258cf4] sm:text-sm bg-gray-50/30 focus:bg-white transition duration-200"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-semibold text-gray-700 ml-0.5" htmlFor="password">Password</label>
+                {!isRegister && (
+                  <button type="button" className="text-xs font-bold text-[#258cf4] hover:text-[#1e73c9] transition-colors">Forgot password?</button>
                 )}
-
-                {/* EMAIL */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <User
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                      size={18}
-                    />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="you@campus.edu"
-                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* PASSWORD */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                      size={18}
-                    />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
               </div>
-
-              {/* ACTIONS */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white py-4 rounded-2xl font-black text-sm tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-indigo-200"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    PROCESSING...
-                  </>
-                ) : (
-                  <>
-                    {isRegister ? 'CREATE ACCOUNT' : 'SIGN IN'}
-                    <ArrowRight size={18} />
-                  </>
-                )}
-              </button>
-
-              <div className="text-center py-2 border-t border-slate-100">
-                <p
-                  onClick={() => setIsRegister(p => !p)}
-                  className="text-xs text-indigo-600 cursor-pointer font-bold hover:text-indigo-700 transition-colors"
-                >
-                  {isRegister
-                    ? '✓ Already have an account? Sign in'
-                    : '+ New user? Create account'}
-                </p>
-              </div>
-
-              {onCancel && (
+              <div className="relative group transition-all duration-300">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-[#258cf4] transition-colors" />
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="block w-full pl-11 pr-11 py-3 border border-gray-200 rounded-[8px] text-gray-900 font-medium placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#258cf4] focus:border-[#258cf4] sm:text-sm bg-gray-50/30 focus:bg-white transition duration-200"
+                  required
+                />
                 <button
                   type="button"
-                  onClick={onCancel}
-                  className="w-full text-slate-400 hover:text-slate-600 text-xs font-bold uppercase transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-[#258cf4] transition-colors"
                 >
-                  Back
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+              </div>
+            </div>
+
+            {/* Sign In Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-[8px] shadow-sm text-sm font-bold text-white bg-[#258cf4] hover:bg-[#1e73c9] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#258cf4] transition-all duration-200 active:scale-95 disabled:opacity-50 mt-4"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-[3px] border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                isRegister ? 'Create Account' : 'Sign In'
               )}
-            </form>
+            </button>
+          </form>
+
+          {/* Social Divider */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-100"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-white text-gray-400 uppercase tracking-widest font-bold text-[9px]">Or continue with</span>
+            </div>
           </div>
+
+          {/* Social Buttons (Stitch Layout) */}
+          <div className="grid grid-cols-2 gap-4">
+            <button className="flex w-full items-center justify-center gap-3 rounded-[8px] bg-white px-3 py-2.5 text-xs font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 focus-visible:ring-transparent transition-all duration-200 active:scale-95" type="button">
+              <svg className="h-5 w-5" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+              </svg>
+              Google
+            </button>
+            <button className="flex w-full items-center justify-center gap-3 rounded-[8px] bg-white px-3 py-2.5 text-xs font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 focus-visible:ring-transparent transition-all duration-200 active:scale-95" type="button">
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.51 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.82-.779.883-1.468 2.337-1.287 3.713 1.35.104 2.727-.69 3.574-1.703z"></path>
+              </svg>
+              Apple
+            </button>
+          </div>
+
+          {/* Footer Section */}
+          <footer className="mt-10 text-center">
+            <p className="text-sm text-gray-500 font-medium">
+              {isRegister ? 'Already have an account? ' : "Don't have an account? "}
+              <button
+                type="button"
+                onClick={() => setIsRegister(p => !p)}
+                className="font-bold text-[#258cf4] hover:text-[#1e73c9] transition-colors"
+              >
+                {isRegister ? 'Sign in' : 'Sign up'}
+              </button>
+            </p>
+          </footer>
         </div>
+
+        {/* Legal Links */}
+        <div className="mt-10 flex justify-center space-x-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest opacity-60">
+          <button className="hover:text-gray-600">Privacy Policy</button>
+          <button className="hover:text-gray-600">Terms of Service</button>
+          <button className="hover:text-gray-600">Help Center</button>
+        </div>
+      </div>
+
+      {/* 🚀 MINIMALIST SYSTEM BADGE */}
+      <div className="absolute bottom-6 left-0 right-0 text-center z-10 pointer-events-none">
+        <p className="text-gray-300 text-[10px] font-black tracking-[0.4em] uppercase opacity-40">BUILD READY • V.2.0.4</p>
       </div>
     </div>
   );

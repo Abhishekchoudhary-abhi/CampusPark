@@ -10,6 +10,7 @@ import {
 import AdminDashboard from './components/AdminDashboard';
 import UserDashboard from './components/UserDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
+import TeacherDashboard from './components/TeacherDashboard';
 import Login from './components/Login';
 
 import Navbar from './components/Navbar';
@@ -95,7 +96,7 @@ const App: React.FC = () => {
 
         setNotifications(n => [
           {
-            id: crypto.randomUUID(),
+            id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
             title: 'Parking Spot Free!',
             message: `Slot ${slot.number} in ${zoneName} is now available.`,
             timestamp: new Date().toLocaleTimeString([], {
@@ -154,7 +155,7 @@ const App: React.FC = () => {
 
     setNotifications(n => [
       {
-        id: crypto.randomUUID(),
+        id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
         title: 'Block deleted',
         message: 'Click Undo to restore this block',
         timestamp: new Date().toLocaleTimeString([], {
@@ -163,7 +164,6 @@ const App: React.FC = () => {
         }),
         type: 'warning',
         read: false,
-        actionZoneId: zoneId,
       },
       ...n,
     ]);
@@ -229,6 +229,8 @@ const App: React.FC = () => {
             <Login />
           ) : role === UserRole.OWNER ? (
             <OwnerDashboard />
+          ) : role === UserRole.TEACHER ? (
+            <TeacherDashboard />
           ) : role === UserRole.ADMIN ? (
             <AdminDashboard
               zones={zones}
