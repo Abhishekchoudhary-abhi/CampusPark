@@ -1,17 +1,48 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ParkingSlot, SlotStatus, ParkingInsights } from '../types';
-import { PARKING_ZONES } from '../constants';
-import { Map, TrendingUp, Info, ChevronRight, Bell, Sparkles, Clock, RefreshCcw, LayoutGrid } from 'lucide-react';
+import { ParkingSlot, SlotStatus, ParkingInsights, ParkingZone } from '../types';
+import { Map, TrendingUp, Info, ChevronRight, Bell, Sparkles, Clock, RefreshCcw, LayoutGrid, Lock, CheckCircle2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { storageService } from '../services/storageService';
 import { getParkingInsights } from '../services/geminiService';
 
-const TeacherDashboard: React.FC = () => {
-  const [activeZone, setActiveZone] = useState<string>(PARKING_ZONES[0].id);
-  const [slots, setSlots] = useState<ParkingSlot[]>([]);
+interface TeacherDashboardProps {
+  zones: ParkingZone[];
+  slots: ParkingSlot[];
+  onReserve: (slotId: string) => void;
+}
+
+const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ zones, slots: initialSlots, onReserve }) => {
+  const [activeZone, setActiveZone] = useState<string>(zones[0]?.id || '');
+  const [slots, setSlots] = useState<ParkingSlot[]>(initialSlots);
   const [insights, setInsights] = useState<ParkingInsights | null>(null);
   const [isInsightsLoading, setIsInsightsLoading] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Reservation window logic (same as UserDashboard)
+  const currentHour = currentTime.getHours();
+  const currentMinute = currentTime.getMinutes();
+  const totalMinutes = currentHour * 60 + currentMinute;
+  const startMinutes = 8 * 60 + 45; // 08:45 AM
+  const endMinutes = 16 * 60 + 30;  // 04:30 PM (16:30)
+  const isReservationEnabled = totalMinutes >= startMinutes && totalMinutes < endMinutes;
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Sync slots from props
+  useEffect(() => {
+    setSlots(initialSlots);
+  }, [initialSlots]);
+
+  // Set initial active zone when zones load
+  useEffect(() => {
+    if (zones.length > 0 && !activeZone) {
+      setActiveZone(zones[0].id);
+    }
+  }, [zones, activeZone]);
 
   const fetchInsights = useCallback(async (currentSlots: ParkingSlot[]) => {
     if (currentSlots.length === 0) return;
@@ -27,20 +58,10 @@ const TeacherDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    async function fetchInitialData() {
-      const loadedSlots = await storageService.loadSlots();
-      if (loadedSlots) {
-        setSlots(loadedSlots);
-        fetchInsights(loadedSlots);
-      }
+    if (slots.length > 0) {
+      fetchInsights(slots);
     }
-    fetchInitialData();
-
-    // Polling as a fallback for "real-time" since WebSocket is not implemented
-    const interval = setInterval(fetchInitialData, 30000); // 30s poll
-
-    return () => clearInterval(interval);
-  }, [fetchInsights]);
+  }, [slots, fetchInsights]);
 
   const getZoneAvailability = (zoneId: string) => {
     const zoneSlots = slots.filter(s => s.zone === zoneId);
@@ -48,7 +69,37 @@ const TeacherDashboard: React.FC = () => {
     return { available, total: zoneSlots.length };
   };
 
-  const chartData = PARKING_ZONES.map(z => {
+  const getStatusStyle = (status: SlotStatus) => {
+    switch (status) {
+      case SlotStatus.AVAILABLE:
+        return {
+          bg: 'bg-emerald-50 border-emerald-100 text-emerald-700',
+          badge: 'bg-emerald-600 text-white',
+          label: 'FREE'
+        };
+      case SlotStatus.RESERVED:
+        return {
+          bg: 'bg-amber-50 border-amber-200 text-amber-700',
+          badge: 'bg-amber-600 text-white',
+          label: 'RESERVED'
+        };
+      case SlotStatus.MAINTENANCE:
+        return {
+          bg: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+          badge: 'bg-indigo-600 text-white',
+          label: 'FIXING'
+        };
+      case SlotStatus.OCCUPIED:
+      default:
+        return {
+          bg: 'bg-slate-50 border-slate-100 text-slate-400',
+          badge: 'bg-slate-300 text-slate-600',
+          label: 'BUSY'
+        };
+    }
+  };
+
+  const chartData = zones.map(z => {
     const stats = getZoneAvailability(z.id);
     return {
       name: z.name,
@@ -148,9 +199,13 @@ const TeacherDashboard: React.FC = () => {
         </div>
       </section>
 
-      {/* QUICK STATUS DASH */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {PARKING_ZONES.map(zone => {
+        {zones.length === 0 ? (
+          <div className="col-span-full py-12 text-center bg-white/50 rounded-[2.5rem] border border-dashed border-slate-200">
+            <LayoutGrid size={32} className="mx-auto text-slate-200 mb-2" />
+            <p className="text-slate-400 font-bold text-sm">Initializing Infrastructure...</p>
+          </div>
+        ) : zones.map(zone => {
           const stats = getZoneAvailability(zone.id);
           const percentage = stats.total === 0 ? 0 : (stats.available / stats.total) * 100;
           const isSelected = activeZone === zone.id;
@@ -230,7 +285,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
             <div>
               <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-                {PARKING_ZONES.find(z => z.id === activeZone)?.name} <span className="text-indigo-600">.</span>
+                {zones.find(z => z.id === activeZone)?.name} <span className="text-indigo-600">.</span>
               </h2>
               <p className="text-slate-500 font-medium">Interactive status view of individual slots.</p>
             </div>
@@ -243,10 +298,12 @@ const TeacherDashboard: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
             {slots.filter(s => s.zone === activeZone).map((slot, index) => {
               const isFree = slot.status === SlotStatus.AVAILABLE;
+              const style = getStatusStyle(slot.status);
+              
               return (
                 <div 
                   key={slot.id}
-                  className={`relative p-6 rounded-[2rem] border-2 transition-all duration-300 flex flex-col items-center justify-center gap-3 hover:scale-105 hover:shadow-xl active:scale-95 group overflow-hidden ${isFree ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'}`}
+                  className={`relative p-6 rounded-[2rem] border-2 transition-all duration-300 flex flex-col items-center justify-center gap-3 hover:scale-105 hover:shadow-xl active:scale-95 group overflow-hidden ${style.bg}`}
                 >
                   <div className={`absolute top-0 right-0 w-8 h-8 rounded-bl-2xl flex items-center justify-center text-[10px] font-black ${isFree ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
                     {index + 1}
@@ -255,9 +312,25 @@ const TeacherDashboard: React.FC = () => {
                     <Map size={24} strokeWidth={2.5} />
                   </div>
                   <span className="font-black text-lg tracking-tighter">{slot.number}</span>
-                  <div className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${isFree ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-600'}`}>
-                    {isFree ? 'FREE' : 'BUSY'}
-                  </div>
+                  
+                  {isFree ? (
+                    <button 
+                      onClick={() => isReservationEnabled && onReserve(slot.id)}
+                      disabled={!isReservationEnabled}
+                      className={`w-full py-2.5 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-2 ${
+                        isReservationEnabled 
+                          ? 'bg-indigo-600 text-white hover:bg-slate-900 shadow-lg shadow-indigo-100 active:scale-90' 
+                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {isReservationEnabled ? <CheckCircle2 size={12} /> : <Lock size={12} />}
+                      {isReservationEnabled ? 'BOOK NOW' : 'LOCKED'}
+                    </button>
+                  ) : (
+                    <div className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${style.badge}`}>
+                      {style.label}
+                    </div>
+                  )}
                 </div>
               );
             })}

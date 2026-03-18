@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ParkingSlot, SlotStatus, ParkingZone, ParkingInsights } from '../types';
-import { Map, TrendingUp, Info, ChevronRight, Bell, Clock, Lock, CheckCircle2, Sparkles, RefreshCcw } from 'lucide-react';
+import { Map, TrendingUp, Info, ChevronRight, Bell, Clock, Lock, CheckCircle2, Sparkles, RefreshCcw, LayoutGrid } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getParkingInsights } from '../services/geminiService';
 
@@ -249,7 +249,13 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ zones, slots, onReserve }
 
       {/* Stacked Zones Section */}
       <div className="space-y-12">
-        {zones.map(zone => {
+        {zones.length === 0 ? (
+          <div className="py-20 text-center bg-white/50 backdrop-blur-sm rounded-[3rem] border border-dashed border-slate-200">
+            <LayoutGrid size={48} className="mx-auto text-slate-200 mb-4" />
+            <p className="text-slate-400 font-bold">No parking zones detected in the system.</p>
+            <p className="text-xs text-slate-300 mt-2 font-black uppercase tracking-widest">Awaiting Infrastructure Sync...</p>
+          </div>
+        ) : zones.map(zone => {
           const zoneStats = getZoneAvailability(zone.id);
           const zoneSlots = slots.filter(s => s.zone === zone.id);
           

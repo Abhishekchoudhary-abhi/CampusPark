@@ -50,6 +50,12 @@ const App: React.FC = () => {
       ]);
       setZones(z);
       setSlots(s);
+      
+      console.log(`✅ Loaded ${z.length} zones and ${s.length} slots from backend.`);
+      if (z.length > 0) {
+        console.log('Sample zone ID:', z[0].id);
+      }
+      
       setWakingUp(false);
     } catch (err) {
       console.error('Failed to load data:', err);
@@ -230,7 +236,7 @@ const App: React.FC = () => {
           ) : role === UserRole.OWNER ? (
             <OwnerDashboard />
           ) : role === UserRole.TEACHER ? (
-            <TeacherDashboard />
+            <TeacherDashboard zones={zones} slots={slots} onReserve={reserveSlot} />
           ) : role === UserRole.ADMIN ? (
             <AdminDashboard
               zones={zones}
